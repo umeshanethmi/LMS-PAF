@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/instructor/assignments")
 public class InstructorAssignmentController {
@@ -20,7 +22,7 @@ public class InstructorAssignmentController {
     }
 
     @PostMapping
-    public ResponseEntity<AssignmentResponse> createAssignment(@RequestBody CreateAssignmentRequest request) {
+    public ResponseEntity<AssignmentResponse> createAssignment(@Valid @RequestBody CreateAssignmentRequest request) {
         return ResponseEntity.ok(assignmentService.createAssignment(request));
     }
 
