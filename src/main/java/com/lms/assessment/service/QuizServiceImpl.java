@@ -74,6 +74,37 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
+    public QuizResponse updateQuiz(Long id, CreateQuizRequest request) {
+        Quiz quiz = quizRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz", "id", id));
+        
+        quiz.setTitle(request.getTitle());
+        quiz.setDescription(request.getDescription());
+        quiz.setTotalMarks(request.getTotalMarks());
+        quiz.setMaxAttempts(request.getMaxAttempts());
+        quiz.setAvailableFrom(request.getAvailableFrom());
+        quiz.setAvailableUntil(request.getAvailableUntil());
+        if (request.getPublished() != null) {
+            quiz.setPublished(request.getPublished());
+        }
+        
+        Quiz updated = quizRepository.save(quiz);
+        return mapToQuizResponse(updated);
+    }
+
+    @Override
+    @Transactional
+    public void deleteQuiz(Long id) {
+        Quiz quiz = quizRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz", "id", id));
+        
+        // Cascading relies on @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+        // Which cleans up QuizQuestion, QuizAttempt, and their QuizAnswer entities from DB
+        quizRepository.delete(quiz);
+    }
+
+    @Override
+    @Transactional
     public QuizQuestionResponse addQuestion(CreateQuizQuestionRequest request) {
         Quiz quiz = quizRepository.findById(request.getQuizId())
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz", "id", request.getQuizId()));
@@ -95,6 +126,31 @@ public class QuizServiceImpl implements QuizService {
     public List<QuizQuestionResponse> getQuestionsByQuiz(Long quizId) {
         return questionRepository.findByQuizId(quizId).stream()
                 .map(this::mapToQuestionResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public QuizQuestionResponse updateQuestion(Long questionId, CreateQuizQuestionRequest request) {
+        QuizQuestion question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("QuizQuestion", "id", questionId));
+        
+        question.setQuestionText(request.getQuestionText());
+        question.setQuestionType(request.getQuestionType());
+        question.setOptions(request.getOptions());
+        question.setCorrectAnswer(request.getCorrectAnswer());
+        question.setMarks(request.getMarks());
+        
+        QuizQuestion updated = questionRepository.save(question);
+        return mapToQuestionResponse(updated);
+    }
+
+    @Override
+    @Transactional
+    public void deleteQuestion(Long questionId) {
+        QuizQuestion question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("QuizQuestion", "id", questionId));
+        
+        questionRepository.delete(question);
     }
 
     @Override

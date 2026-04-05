@@ -9,8 +9,14 @@ public interface QuizService {
     QuizResponse getQuizById(Long id);
     List<QuizResponse> getQuizzesByCourse(Long courseId);
     List<QuizResponse> getPublishedQuizzesByCourse(Long courseId);
+    
+    QuizResponse updateQuiz(Long id, CreateQuizRequest request);
+    void deleteQuiz(Long id);
 
     QuizQuestionResponse addQuestion(CreateQuizQuestionRequest request);
+    QuizQuestionResponse updateQuestion(Long questionId, CreateQuizQuestionRequest request);
+    void deleteQuestion(Long questionId);
+    
     List<QuizQuestionResponse> getQuestionsByQuiz(Long quizId);
 
     QuizAttemptResponse startAttempt(StartQuizAttemptRequest request);
