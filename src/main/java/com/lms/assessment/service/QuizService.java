@@ -8,6 +8,7 @@ public interface QuizService {
     QuizResponse createQuiz(CreateQuizRequest request);
     QuizResponse getQuizById(Long id);
     List<QuizResponse> getQuizzesByCourse(Long courseId);
+    List<QuizResponse> getPublishedQuizzesByCourse(Long courseId);
 
     QuizQuestionResponse addQuestion(CreateQuizQuestionRequest request);
     List<QuizQuestionResponse> getQuestionsByQuiz(Long quizId);

@@ -67,6 +67,12 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    public List<QuizResponse> getPublishedQuizzesByCourse(Long courseId) {
+        return quizRepository.findByCourseIdAndPublishedTrue(courseId).stream()
+                .map(this::mapToQuizResponse).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public QuizQuestionResponse addQuestion(CreateQuizQuestionRequest request) {
         Quiz quiz = quizRepository.findById(request.getQuizId())
