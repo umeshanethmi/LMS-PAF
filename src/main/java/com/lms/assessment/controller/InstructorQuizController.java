@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/instructor/quizzes")
 public class InstructorQuizController {
@@ -18,7 +20,7 @@ public class InstructorQuizController {
     }
 
     @PostMapping
-    public ResponseEntity<QuizResponse> createQuiz(@RequestBody CreateQuizRequest request) {
+    public ResponseEntity<QuizResponse> createQuiz(@Valid @RequestBody CreateQuizRequest request) {
         return ResponseEntity.ok(quizService.createQuiz(request));
     }
 
@@ -33,7 +35,7 @@ public class InstructorQuizController {
     }
 
     @PostMapping("/{id}/questions")
-    public ResponseEntity<QuizQuestionResponse> addQuestion(@PathVariable Long id, @RequestBody CreateQuizQuestionRequest request) {
+    public ResponseEntity<QuizQuestionResponse> addQuestion(@PathVariable Long id, @Valid @RequestBody CreateQuizQuestionRequest request) {
         request.setQuizId(id);
         return ResponseEntity.ok(quizService.addQuestion(request));
     }

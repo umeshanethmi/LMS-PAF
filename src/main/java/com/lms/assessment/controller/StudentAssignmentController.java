@@ -11,8 +11,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+import org.springframework.validation.annotation.Validated;
+
 @RestController
 @RequestMapping("/api/student/assignments")
+@Validated
 public class StudentAssignmentController {
 
     private final AssignmentService assignmentService;
@@ -34,7 +37,7 @@ public class StudentAssignmentController {
     @PostMapping(value = "/{id}/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<AssignmentSubmissionResponse> submitAssignment(
             @PathVariable Long id,
-            @RequestParam("studentId") Long studentId,
+            @RequestParam("studentId") @jakarta.validation.constraints.NotNull Long studentId,
             @RequestParam(value = "textAnswer", required = false) String textAnswer,
             @RequestParam(value = "file", required = false) MultipartFile file) {
         
