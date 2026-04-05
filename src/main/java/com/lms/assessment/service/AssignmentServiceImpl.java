@@ -70,6 +70,12 @@ public class AssignmentServiceImpl implements AssignmentService {
     }
 
     @Override
+    public List<AssignmentResponse> getPublishedAssignmentsByCourse(Long courseId) {
+        List<Assignment> assignments = assignmentRepository.findByCourseIdAndPublishedTrue(courseId);
+        return assignments.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public AssignmentSubmissionResponse submitAssignment(SubmitAssignmentRequest request) {
         Assignment assignment = assignmentRepository.findById(request.getAssignmentId())

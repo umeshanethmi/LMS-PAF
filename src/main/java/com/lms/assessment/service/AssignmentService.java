@@ -12,6 +12,7 @@ public interface AssignmentService {
     AssignmentResponse createAssignment(CreateAssignmentRequest request);
     AssignmentResponse getAssignmentById(Long id);
     List<AssignmentResponse> getAssignmentsByCourse(Long courseId);
+    List<AssignmentResponse> getPublishedAssignmentsByCourse(Long courseId);
     
     AssignmentSubmissionResponse submitAssignment(SubmitAssignmentRequest request);
     List<AssignmentSubmissionResponse> getSubmissionsByAssignment(Long assignmentId);
