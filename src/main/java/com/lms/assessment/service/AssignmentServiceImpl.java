@@ -77,6 +77,47 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     @Transactional
+    public AssignmentResponse updateAssignment(Long id, CreateAssignmentRequest request) {
+        Assignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", id));
+        
+        assignment.setTitle(request.getTitle());
+        assignment.setDescription(request.getDescription());
+        assignment.setDueDate(request.getDueDate());
+        assignment.setAllowedFileTypes(request.getAllowedFileTypes());
+        assignment.setMaxFileSizeBytes(request.getMaxFileSizeBytes());
+        assignment.setTotalMarks(request.getTotalMarks());
+        if (request.getPublished() != null) {
+            assignment.setPublished(request.getPublished());
+        }
+        
+        Assignment updated = assignmentRepository.save(assignment);
+        return mapToResponse(updated);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAssignment(Long id) {
+        Assignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", id));
+        
+        // Securely delete associated submission files from disk to save space
+        for (AssignmentSubmission submission : assignment.getSubmissions()) {
+            if (submission.getStoredFilename() != null) {
+                try {
+                    fileStorageService.deleteFile(submission.getStoredFilename());
+                } catch (Exception ex) {
+                    // Log the error but allow DB deletion to proceed
+                    System.err.println("Failed to delete file from disk: " + submission.getStoredFilename());
+                }
+            }
+        }
+        
+        assignmentRepository.delete(assignment);
+    }
+
+    @Override
+    @Transactional
     public AssignmentSubmissionResponse submitAssignment(SubmitAssignmentRequest request) {
         Assignment assignment = assignmentRepository.findById(request.getAssignmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", request.getAssignmentId()));
