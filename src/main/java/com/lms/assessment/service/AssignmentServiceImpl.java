@@ -20,8 +20,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class AssignmentServiceImpl implements AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
@@ -108,7 +110,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                     fileStorageService.deleteFile(submission.getStoredFilename());
                 } catch (Exception ex) {
                     // Log the error but allow DB deletion to proceed
-                    System.err.println("Failed to delete file from disk: " + submission.getStoredFilename());
+                    log.error("Failed to delete file from disk: {}", submission.getStoredFilename(), ex);
                 }
             }
         }
@@ -134,7 +136,20 @@ public class AssignmentServiceImpl implements AssignmentService {
             if (assignment.getMaxFileSizeBytes() != null && file.getSize() > assignment.getMaxFileSizeBytes()) {
                 throw new SubmissionException("File size exceeds maximum allowed size.");
             }
-            // Need robust file type checking here later...
+            
+            // Validate allowed file types
+            if (assignment.getAllowedFileTypes() != null && !assignment.getAllowedFileTypes().isBlank()) {
+                String originalName = file.getOriginalFilename();
+                String extension = "";
+                if (originalName != null && originalName.lastIndexOf('.') > 0) {
+                    extension = originalName.substring(originalName.lastIndexOf('.'));
+                }
+                
+                String allowed = assignment.getAllowedFileTypes().toLowerCase();
+                if (!allowed.contains(extension.toLowerCase())) {
+                    throw new SubmissionException("Invalid file type. Allowed types: " + assignment.getAllowedFileTypes());
+                }
+            }
 
             storedFilename = fileStorageService.storeFile(file);
             originalFilename = file.getOriginalFilename();
