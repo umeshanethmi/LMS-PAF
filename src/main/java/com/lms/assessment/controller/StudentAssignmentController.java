@@ -26,7 +26,7 @@ public class StudentAssignmentController {
 
     @GetMapping("/course/{courseId}")
     public ResponseEntity<List<AssignmentResponse>> getAssignmentsByCourse(@PathVariable Long courseId) {
-        return ResponseEntity.ok(assignmentService.getAssignmentsByCourse(courseId));
+        return ResponseEntity.ok(assignmentService.getPublishedAssignmentsByCourse(courseId));
     }
 
     @GetMapping("/{id}")

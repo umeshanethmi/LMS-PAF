@@ -21,7 +21,7 @@ public class StudentQuizController {
 
     @GetMapping("/course/{courseId}")
     public ResponseEntity<List<QuizResponse>> getQuizzesByCourse(@PathVariable Long courseId) {
-        return ResponseEntity.ok(quizService.getQuizzesByCourse(courseId));
+        return ResponseEntity.ok(quizService.getPublishedQuizzesByCourse(courseId));
     }
 
     @GetMapping("/{id}")
