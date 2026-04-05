@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/student/quizzes")
 public class StudentQuizController {
@@ -33,13 +35,13 @@ public class StudentQuizController {
     }
 
     @PostMapping("/{id}/attempts/start")
-    public ResponseEntity<QuizAttemptResponse> startAttempt(@PathVariable Long id, @RequestBody StartQuizAttemptRequest request) {
+    public ResponseEntity<QuizAttemptResponse> startAttempt(@PathVariable Long id, @Valid @RequestBody StartQuizAttemptRequest request) {
         request.setQuizId(id);
         return ResponseEntity.ok(quizService.startAttempt(request));
     }
 
     @PostMapping("/attempts/{attemptId}/answers")
-    public ResponseEntity<QuizAnswerResponse> submitAnswer(@PathVariable Long attemptId, @RequestBody SubmitQuizAnswerRequest request) {
+    public ResponseEntity<QuizAnswerResponse> submitAnswer(@PathVariable Long attemptId, @Valid @RequestBody SubmitQuizAnswerRequest request) {
         request.setAttemptId(attemptId);
         return ResponseEntity.ok(quizService.submitAnswer(request));
     }
