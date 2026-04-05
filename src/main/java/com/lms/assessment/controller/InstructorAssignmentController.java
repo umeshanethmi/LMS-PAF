@@ -25,7 +25,16 @@ public class InstructorAssignmentController {
     public ResponseEntity<AssignmentResponse> createAssignment(@Valid @RequestBody CreateAssignmentRequest request) {
         return ResponseEntity.ok(assignmentService.createAssignment(request));
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<AssignmentResponse> updateAssignment(@PathVariable Long id, @Valid @RequestBody CreateAssignmentRequest request) {
+        return ResponseEntity.ok(assignmentService.updateAssignment(id, request));
+    }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAssignment(@PathVariable Long id) {
+        assignmentService.deleteAssignment(id);
+        return ResponseEntity.noContent().build();
+    }
     @GetMapping("/{id}")
     public ResponseEntity<AssignmentResponse> getAssignmentById(@PathVariable Long id) {
         return ResponseEntity.ok(assignmentService.getAssignmentById(id));
