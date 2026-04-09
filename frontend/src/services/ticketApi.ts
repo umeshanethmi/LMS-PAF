@@ -2,40 +2,44 @@ import apiClient from './apiClient';
 
 export interface TicketAttachmentResponse {
   id: number;
-  fileName: string;
-  fileUrl: string;
+  imagePath: string;
+  fileUrl?: string;
+  createdAt?: string;
 }
 
 export interface TicketCommentResponse {
   id: number;
-  authorUserId: number;
+  ticketId: number;
+  userId: number;
+  authorUserId?: number;
   content: string;
-  createdAt: string;
+  timestamp: string;
+  createdAt?: string;
 }
 
 export interface Ticket {
   id: number;
-  title: string;
+  resourceId: string;
+  title?: string;
   description: string;
   category: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'REJECTED';
-  location?: string;
-  facilityId?: number;
+  location: string;
+  contactDetails: string;
   preferredContact?: string;
-  reporterUserId: number;
-  technicianUserId?: number;
+  assignedTechnicianId?: string;
   resolutionNotes?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   attachments: TicketAttachmentResponse[];
   comments: TicketCommentResponse[];
 }
 
-export async function getMyTickets(currentUserId: number): Promise<Ticket[]> {
-  const res = await apiClient.get<Ticket[]>(`/tickets/me`, {
-    params: { currentUserId },
-  });
+export type TicketRole = 'USER' | 'ADMIN' | 'TECHNICIAN';
+
+export async function getAllTickets(): Promise<Ticket[]> {
+  const res = await apiClient.get<Ticket[]>(`/tickets`);
   return res.data;
 }
 
@@ -53,14 +57,30 @@ export async function addTicketComment(ticketId: number, body: { content: string
   return res.data as TicketCommentResponse;
 }
 
-export async function deleteTicketComment(ticketId: number, commentId: number, currentUserId: number, isStaffOrAdmin: boolean) {
+export async function deleteTicketComment(ticketId: number, commentId: number, currentUserId: number, role: TicketRole) {
   await apiClient.delete(`/tickets/${ticketId}/comments/${commentId}`, {
-    params: { currentUserId, isStaffOrAdmin },
+    params: { currentUserId, role },
   });
 }
 
-export async function updateTicketStatus(ticketId: number, body: { newStatus: Ticket['status'] }, currentUserId: number, isStaffOrAdmin: boolean) {
+export async function updateTicketStatus(
+  ticketId: number,
+  body: { newStatus: Ticket['status']; resolutionNotes?: string },
+  currentUserId: number,
+  role: TicketRole,
+) {
   await apiClient.put(`/tickets/${ticketId}/status`, body, {
-    params: { currentUserId, isStaffOrAdmin },
+    params: { currentUserId, role },
+  });
+}
+
+export async function assignTechnician(
+  ticketId: number,
+  technicianId: string,
+  currentUserId: number,
+  role: TicketRole,
+) {
+  await apiClient.put(`/tickets/${ticketId}/assign`, null, {
+    params: { technicianId, currentUserId, role },
   });
 }
