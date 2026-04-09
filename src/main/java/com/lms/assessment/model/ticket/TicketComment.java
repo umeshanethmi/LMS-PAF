@@ -25,12 +25,12 @@ public class TicketComment {
     private Ticket ticket;
 
     @Column(nullable = false)
-    private Long authorUserId;
+    private Long userId;
 
     @Column(nullable = false, length = 2000)
     private String content;
 
     @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "comment_timestamp", updatable = false)
+    private LocalDateTime timestamp;
 }
