@@ -37,6 +37,11 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     @Override
     public String storeFile(MultipartFile file) {
+        return storeFile(file, null);
+    }
+
+    @Override
+    public String storeFile(MultipartFile file, String subdirectory) {
         // Normalize file name
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
         
@@ -55,9 +60,22 @@ public class FileStorageServiceImpl implements FileStorageService {
             
             String targetFileName = UUID.randomUUID().toString() + fileExtension;
             
+            Path targetDirectory = this.fileStorageLocation;
+            if (subdirectory != null && !subdirectory.isBlank()) {
+                targetDirectory = targetDirectory.resolve(subdirectory).normalize();
+                Files.createDirectories(targetDirectory);
+            }
+
             // Copy file to the target location (Replacing existing file with the same name)
-            Path targetLocation = this.fileStorageLocation.resolve(targetFileName);
+            Path targetLocation = targetDirectory.resolve(targetFileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
+            if (subdirectory != null && !subdirectory.isBlank()) {
+                String normalizedSubdir = subdirectory.replace("\\", "/");
+                return normalizedSubdir.endsWith("/")
+                        ? normalizedSubdir + targetFileName
+                        : normalizedSubdir + "/" + targetFileName;
+            }
 
             return targetFileName;
         } catch (IOException ex) {
