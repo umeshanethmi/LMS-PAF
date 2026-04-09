@@ -1,4 +1,4 @@
-import { Ticket } from '../../services/ticketApi';
+import type { Ticket } from '../../services/ticketApi';
 
 interface TicketListProps {
   tickets: Ticket[];

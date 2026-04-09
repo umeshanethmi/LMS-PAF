@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import apiClient from '../../services/apiClient';
 
 interface AssignmentSubmission {

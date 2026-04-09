@@ -3,7 +3,6 @@ package com.lms.assessment.service;
 import com.lms.assessment.config.FileStorageProperties;
 import com.lms.assessment.exception.FileStorageException;
 import com.lms.assessment.exception.MyFileNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -23,7 +22,6 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     private final Path fileStorageLocation;
 
-    @Autowired
     public FileStorageServiceImpl(FileStorageProperties fileStorageProperties) {
         this.fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
                 .toAbsolutePath().normalize();

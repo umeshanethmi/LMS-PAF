@@ -1,4 +1,5 @@
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { createTicket } from '../../services/ticketApi';
 import FileUpload from '../common/FileUpload';
 
@@ -120,7 +121,7 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
         <label className="block text-sm font-medium">Attachments (up to 3 images)</label>
         <FileUpload
           maxFiles={3}
-          accept="image/*"
+          accept={{ 'image/*': [] }}
           onFilesSelected={setFiles}
         />
       </div>

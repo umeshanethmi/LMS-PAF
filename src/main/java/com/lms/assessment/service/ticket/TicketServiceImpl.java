@@ -4,7 +4,6 @@ import com.lms.assessment.dto.ticket.*;
 import com.lms.assessment.exception.ResourceNotFoundException;
 import com.lms.assessment.exception.SubmissionException;
 import com.lms.assessment.model.ticket.*;
-import com.lms.assessment.repository.ticket.TicketAttachmentRepository;
 import com.lms.assessment.repository.ticket.TicketCommentRepository;
 import com.lms.assessment.repository.ticket.TicketRepository;
 import com.lms.assessment.service.FileStorageService;
@@ -23,16 +22,13 @@ public class TicketServiceImpl implements TicketService {
     private static final int MAX_ATTACHMENTS_PER_TICKET = 3;
 
     private final TicketRepository ticketRepository;
-    private final TicketAttachmentRepository attachmentRepository;
     private final TicketCommentRepository commentRepository;
     private final FileStorageService fileStorageService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
-                             TicketAttachmentRepository attachmentRepository,
                              TicketCommentRepository commentRepository,
                              FileStorageService fileStorageService) {
         this.ticketRepository = ticketRepository;
-        this.attachmentRepository = attachmentRepository;
         this.commentRepository = commentRepository;
         this.fileStorageService = fileStorageService;
     }

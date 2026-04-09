@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import TicketCreateForm from '../../components/tickets/TicketCreateForm';
 import TicketList from '../../components/tickets/TicketList';
 import TicketDetailView from '../../components/tickets/TicketDetailView';
-import { getMyTickets, Ticket } from '../../services/ticketApi';
+import { getMyTickets } from '../../services/ticketApi';
+import type { Ticket } from '../../services/ticketApi';
 
 function IncidentTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);

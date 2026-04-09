@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Ticket, TicketCommentResponse, addTicketComment, deleteTicketComment, updateTicketStatus } from '../../services/ticketApi';
+import { addTicketComment, deleteTicketComment, updateTicketStatus } from '../../services/ticketApi';
+import type { Ticket, TicketCommentResponse } from '../../services/ticketApi';
 
 interface TicketDetailViewProps {
   ticket: Ticket;

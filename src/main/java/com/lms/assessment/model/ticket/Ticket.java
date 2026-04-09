@@ -1,7 +1,5 @@
 package com.lms.assessment.model.ticket;
 
-import com.lms.assessment.model.ticket.Priority;
-import com.lms.assessment.model.ticket.TicketStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
