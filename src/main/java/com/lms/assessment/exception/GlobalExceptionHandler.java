@@ -1,6 +1,7 @@
 package com.lms.assessment.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -35,9 +36,14 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleForbiddenOperationException(ForbiddenOperationException ex) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex) {
-        return buildErrorResponse(HttpStatus.valueOf(413), "File size exceeds the configured maximum limit.");
+        return buildErrorResponse(HttpStatusCode.valueOf(413), "File size exceeds the configured maximum limit.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -63,11 +69,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + ex.getMessage());
     }
 
-    private ResponseEntity<Map<String, Object>> buildErrorResponse(HttpStatus status, String message) {
+    private ResponseEntity<Map<String, Object>> buildErrorResponse(HttpStatusCode status, String message) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", status.value());
-        body.put("error", status.getReasonPhrase());
+        body.put("error", HttpStatus.valueOf(status.value()).getReasonPhrase());
         body.put("message", message);
         return new ResponseEntity<>(body, status);
     }

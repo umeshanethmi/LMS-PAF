@@ -22,32 +22,30 @@ public class Ticket {
     private Long id;
 
     @Column(nullable = false)
-    private String title;
+    private String resourceId;
 
-    @Column(length = 4000)
-    private String description;
+    @Column(nullable = false)
+    private String location;
 
     @Column(nullable = false)
     private String category;
+
+    @Column(length = 4000, nullable = false)
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Priority priority;
 
+    @Column(length = 2000, nullable = false)
+    private String contactDetails;
+
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TicketStatus status;
+    private TicketStatus status = TicketStatus.OPEN;
 
-    private String location;
-
-    private Long facilityId;
-
-    private String preferredContact;
-
-    @Column(nullable = false)
-    private Long reporterUserId;
-
-    private Long technicianUserId;
+    private String assignedTechnicianId;
 
     @Column(length = 4000)
     private String resolutionNotes;
