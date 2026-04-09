@@ -17,16 +17,16 @@ import java.util.List;
 public class TicketResponse {
 
     private Long id;
+    private String resourceId;
     private String title;
-    private String description;
+    private String location;
     private String category;
+    private String description;
     private Priority priority;
     private TicketStatus status;
-    private String location;
-    private Long facilityId;
+    private String contactDetails;
     private String preferredContact;
-    private Long reporterUserId;
-    private Long technicianUserId;
+    private String assignedTechnicianId;
     private String resolutionNotes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

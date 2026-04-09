@@ -1,20 +1,17 @@
 package com.lms.assessment.dto.ticket;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TicketAttachmentResponse {
+public class AssignTechnicianRequest {
 
-    private Long id;
-    private String imagePath;
-    private String fileUrl;
-    private LocalDateTime createdAt;
+    @NotNull(message = "Technician ID is required")
+    private String technicianId;
 }
