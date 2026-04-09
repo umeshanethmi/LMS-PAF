@@ -1,7 +1,7 @@
 import { createContext, useState, useContext } from 'react';
 import type { ReactNode } from 'react';
 
-type UserRole = 'user' | 'admin' | null;
+type UserRole = 'user' | 'admin' | 'technician' | null;
 
 interface AuthContextType {
   role: UserRole;
