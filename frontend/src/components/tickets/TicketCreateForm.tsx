@@ -171,7 +171,13 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
             <FileUpload
               maxFiles={3}
               accept={{ 'image/*': [] }}
-              onFilesSelected={setFiles}
+              onFilesSelected={(selected) => {
+                if (selected.length > 3) {
+                  alert('You can only select up to 3 images.');
+                  return;
+                }
+                setFiles(selected);
+              }}
             />
           </div>
         </div>

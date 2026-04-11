@@ -33,8 +33,8 @@ public class MaintenanceTicketController {
             @RequestParam(value = "images", required = false) MultipartFile[] files) {
         
         if (files != null && files.length > 3) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Error: You cannot upload more than 3 images.");
+            return ResponseEntity.badRequest()
+                    .body("Maximum 3 images allowed");
         }
 
         try {
@@ -84,6 +84,20 @@ public class MaintenanceTicketController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error updating status: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/assign")
+    public ResponseEntity<?> assignTechnicianPut(@PathVariable Long id, @RequestParam("technicianId") String technicianId) {
+        try {
+            return repository.findById(id).map(ticket -> {
+                ticket.setAssignedTechnicianId(technicianId);
+                ticket.setUpdatedAt(LocalDateTime.now());
+                return ResponseEntity.ok(repository.save(ticket));
+            }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Ticket not found"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error assigning technician: " + e.getMessage());
         }
     }
 

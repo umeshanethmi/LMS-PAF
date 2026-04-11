@@ -1,36 +1,27 @@
 package com.lms.assessment.model.ticket;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "ticket_comments")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class TicketComment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ticket_id", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Ticket ticket;
-
-    @Column(nullable = false)
-    private Long userId;
-
-    @Column(nullable = false, length = 2000)
-    private String content;
-
-    @CreationTimestamp
-    @Column(name = "comment_timestamp", updatable = false)
-    private LocalDateTime timestamp;
+    private Long ticketId;
+    private String author;
+    private String message;
+    private LocalDateTime createdAt;
 }

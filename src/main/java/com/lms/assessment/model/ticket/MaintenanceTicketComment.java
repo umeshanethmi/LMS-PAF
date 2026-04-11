@@ -21,7 +21,7 @@ public class MaintenanceTicketComment {
     private Long id;
 
     private Long ticketId;
-    private String authorName;
+    private String author;
     private String message;
     private LocalDateTime createdAt;
 }
