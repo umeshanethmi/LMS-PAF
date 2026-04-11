@@ -34,10 +34,13 @@ public class MaintenanceTicket {
     @Enumerated(EnumType.STRING)
     private Status status;
 
+    private String assignedTechnicianId;
+
     @ElementCollection
     private List<String> attachmentPaths;
 
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public enum Status {
         OPEN, IN_PROGRESS, RESOLVED, CLOSED

@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/maintenancetickets")
@@ -30,6 +31,11 @@ public class MaintenanceTicketController {
     public ResponseEntity<?> createTicket(
             @ModelAttribute MaintenanceTicket ticket,
             @RequestParam(value = "images", required = false) MultipartFile[] files) {
+        
+        if (files != null && files.length > 3) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: You cannot upload more than 3 images.");
+        }
 
         try {
             ticket.setCreatedAt(LocalDateTime.now());
@@ -65,5 +71,36 @@ public class MaintenanceTicketController {
     @GetMapping
     public ResponseEntity<List<MaintenanceTicket>> getAllTickets() {
         return ResponseEntity.ok(repository.findAll());
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestParam("status") String status) {
+        try {
+            return repository.findById(id).map(ticket -> {
+                ticket.setStatus(MaintenanceTicket.Status.valueOf(status.toUpperCase()));
+                ticket.setUpdatedAt(LocalDateTime.now());
+                return ResponseEntity.ok(repository.save(ticket));
+            }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Ticket not found with id: " + id));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating status: " + e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{id}/assign")
+    public ResponseEntity<?> assignTechnician(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        try {
+            return repository.findById(id).map(ticket -> {
+                if (payload.containsKey("assignedTechnicianId")) {
+                    ticket.setAssignedTechnicianId(payload.get("assignedTechnicianId"));
+                } else if (payload.containsKey("technicianId")) {
+                    ticket.setAssignedTechnicianId(payload.get("technicianId"));
+                }
+                return ResponseEntity.ok(repository.save(ticket));
+            }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error assigning technician: " + e.getMessage());
+        }
     }
 }
