@@ -23,6 +23,33 @@ const TYPE_LABELS: Record<string, string> = {
   EQUIPMENT: 'Equipment',
 };
 
+const DAY_LABELS: Record<string, string> = {
+  MON: 'Monday', TUE: 'Tuesday', WED: 'Wednesday', THU: 'Thursday',
+  FRI: 'Friday', SAT: 'Saturday', SUN: 'Sunday',
+};
+
+function parseSchedule(availableDays: string | null): { day: string; start?: string; end?: string }[] {
+  if (!availableDays) return [];
+  if (availableDays.includes(':')) {
+    return availableDays.split(',').map(part => {
+      const colonIdx = part.indexOf(':');
+      const day = part.slice(0, colonIdx).trim();
+      const times = part.slice(colonIdx + 1).trim();
+      const dashIdx = times.indexOf('-');
+      return { day, start: times.slice(0, dashIdx), end: times.slice(dashIdx + 1) };
+    });
+  }
+  return availableDays.split(',').map(day => ({ day: day.trim() }));
+}
+
+function fmt(t: string) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return m === 0 ? `${hour}:00 ${ampm}` : `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
 export default function ResourceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -124,25 +151,30 @@ export default function ResourceDetail() {
               </div>
             )}
 
-            {resource.availabilityStart && resource.availabilityEnd && (
-              <div className="flex gap-3 items-start">
-                <span className="text-xl">🕐</span>
-                <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase">Availability Hours</p>
-                  <p className="text-gray-900 font-medium mt-0.5">{resource.availabilityStart} – {resource.availabilityEnd}</p>
+            {resource.availableDays && (() => {
+              const schedule = parseSchedule(resource.availableDays);
+              const hasHours = schedule.some(s => s.start);
+              return (
+                <div className="flex gap-3 items-start sm:col-span-2">
+                  <span className="text-xl">📅</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-gray-400 uppercase mb-2">Weekly Schedule</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      {schedule.map(({ day, start, end }) => (
+                        <div key={day} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <span className="text-sm font-medium text-gray-700">{DAY_LABELS[day] ?? day}</span>
+                          {hasHours && start && end ? (
+                            <span className="text-sm text-indigo-600 font-medium">{fmt(start)} – {fmt(end)}</span>
+                          ) : (
+                            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Open</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {resource.availableDays && (
-              <div className="flex gap-3 items-start">
-                <span className="text-xl">📅</span>
-                <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase">Available Days</p>
-                  <p className="text-gray-900 font-medium mt-0.5">{resource.availableDays}</p>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="flex gap-3 items-start">
               <span className="text-xl">📆</span>

@@ -289,24 +289,33 @@ export default function ResourceCatalogue() {
                     <span>{resource.capacity} people</span>
                   </div>
                 )}
-                {resource.availabilityStart && resource.availabilityEnd && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>🕐</span>
-                    <span>{resource.availabilityStart} – {resource.availabilityEnd}</span>
-                  </div>
-                )}
-                {resource.availableDays && (
-                  <div className="flex items-start gap-2 text-sm text-gray-600">
-                    <span className="mt-0.5">📅</span>
-                    <div className="flex flex-wrap gap-1">
-                      {resource.availableDays.split(',').map(day => (
-                        <span key={day} className="bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-medium px-1.5 py-0.5 rounded">
-                          {DAY_LABELS[day.trim()] ?? day.trim()}
-                        </span>
-                      ))}
+                {resource.availableDays && (() => {
+                  const schedule = parseSchedule(resource.availableDays);
+                  const hasHours = schedule.some(s => s.start);
+                  return (
+                    <div className="flex items-start gap-2 text-sm text-gray-600">
+                      <span className="mt-0.5">📅</span>
+                      {hasHours ? (
+                        <div className="flex flex-col gap-1 w-full">
+                          {schedule.map(({ day, start, end }) => (
+                            <div key={day} className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-gray-500 w-8">{DAY_LABELS[day] ?? day}</span>
+                              <span className="text-xs text-gray-600">{fmt(start!)} – {fmt(end!)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {schedule.map(({ day }) => (
+                            <span key={day} className="bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-medium px-1.5 py-0.5 rounded">
+                              {DAY_LABELS[day] ?? day}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
                 {resource.description && (
                   <p className="text-xs text-gray-400 mt-2 line-clamp-2">{resource.description}</p>
                 )}
