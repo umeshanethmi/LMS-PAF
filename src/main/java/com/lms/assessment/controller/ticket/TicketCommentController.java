@@ -28,6 +28,6 @@ public class TicketCommentController {
 
     @GetMapping("/{ticketId}")
     public ResponseEntity<List<TicketComment>> getComments(@PathVariable Long ticketId) {
-        return ResponseEntity.ok(repository.findByTicketIdOrderByCreatedAtAsc(ticketId));
+        return ResponseEntity.ok(repository.findByMaintenanceTicketIdOrderByCreatedAtAsc(ticketId));
     }
 }

@@ -5,6 +5,8 @@ import com.lms.assessment.exception.ForbiddenOperationException;
 import com.lms.assessment.exception.ResourceNotFoundException;
 import com.lms.assessment.exception.SubmissionException;
 import com.lms.assessment.model.ticket.*;
+import com.lms.assessment.repository.ticket.MaintenanceTicketCommentRepository;
+import com.lms.assessment.repository.ticket.MaintenanceTicketRepository;
 import com.lms.assessment.repository.ticket.TicketCommentRepository;
 import com.lms.assessment.repository.ticket.TicketRepository;
 import com.lms.assessment.service.FileStorageService;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -27,13 +30,16 @@ public class TicketServiceImpl implements TicketService {
     private static final int MAX_ATTACHMENTS_PER_TICKET = 3;
 
     private final TicketRepository ticketRepository;
+    private final MaintenanceTicketRepository maintenanceTicketRepository;
     private final TicketCommentRepository commentRepository;
     private final FileStorageService fileStorageService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
+                             MaintenanceTicketRepository maintenanceTicketRepository,
                              TicketCommentRepository commentRepository,
                              FileStorageService fileStorageService) {
         this.ticketRepository = ticketRepository;
+        this.maintenanceTicketRepository = maintenanceTicketRepository;
         this.commentRepository = commentRepository;
         this.fileStorageService = fileStorageService;
     }
@@ -155,13 +161,15 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+        MaintenanceTicket ticket = maintenanceTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("MaintenanceTicket", "id", ticketId));
 
         TicketComment comment = TicketComment.builder()
-                .ticket(ticket)
+                .maintenanceTicket(ticket)
                 .userId(currentUserId)
-                .content(request.getContent())
+                .author("Staff") // Default for now
+                .message(request.getContent())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         TicketComment saved = commentRepository.save(comment);
@@ -170,13 +178,13 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public void deleteComment(Long ticketId, Long commentId, Long currentUserId, TicketActorRole actorRole) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+        MaintenanceTicket ticket = maintenanceTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("MaintenanceTicket", "id", ticketId));
 
         TicketComment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("TicketComment", "id", commentId));
 
-        if (!Objects.equals(comment.getTicket().getId(), ticket.getId())) {
+        if (!Objects.equals(comment.getMaintenanceTicket().getId(), ticket.getId())) {
             throw new SubmissionException("Comment does not belong to the specified ticket.");
         }
 
@@ -280,7 +288,7 @@ public class TicketServiceImpl implements TicketService {
                     .map(this::mapToAttachmentResponse)
                     .collect(Collectors.toList());
 
-            List<TicketComment> comments = commentRepository.findByTicketIdOrderByTimestampAsc(ticket.getId());
+            List<TicketComment> comments = commentRepository.findByMaintenanceTicketIdOrderByCreatedAtAsc(ticket.getId());
             commentResponses = comments.stream()
                     .map(this::mapToCommentResponse)
                     .collect(Collectors.toList());
@@ -318,12 +326,12 @@ public class TicketServiceImpl implements TicketService {
     private TicketCommentResponse mapToCommentResponse(TicketComment comment) {
         return TicketCommentResponse.builder()
                 .id(comment.getId())
-                .ticketId(comment.getTicket().getId())
+                .ticketId(comment.getMaintenanceTicket().getId())
                 .userId(comment.getUserId())
                 .authorUserId(comment.getUserId())
-                .content(comment.getContent())
-                .timestamp(comment.getTimestamp())
-                .createdAt(comment.getTimestamp())
+                .content(comment.getMessage())
+                .timestamp(comment.getCreatedAt())
+                .createdAt(comment.getCreatedAt())
                 .build();
     }
 

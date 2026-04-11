@@ -41,23 +41,24 @@ function TicketDetailView({ ticket, onClose, onUpdated }: TicketDetailViewProps)
     }
   };
 
-  const handleAddComment = async () => {
+  const handlePostComment = async () => {
     if (!comment.trim()) return;
     try {
       await axios.post(`http://localhost:8080/api/comments`, {
         ticketId: ticket.id,
+        userId: 1, // Default for now
         author: "Staff Member", 
         message: comment
       });
       setComment('');
       fetchComments();
     } catch (error) {
-      console.error('Failed to add comment', error);
+      console.error('Failed to post comment', error);
       alert('Failed to post comment');
     }
   };
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusUpdate = async (newStatus: string) => {
     setUpdating(true);
     try {
       await axios.patch(`http://localhost:8080/api/maintenancetickets/${ticket.id}/status?status=${newStatus}`);
@@ -154,15 +155,13 @@ function TicketDetailView({ ticket, onClose, onUpdated }: TicketDetailViewProps)
           </div>
 
           {/* Images Grid */}
-          <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">Attachments</label>
-            {displayImages && displayImages.length > 0 ? (
+          {displayImages && displayImages.length > 0 && (
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3 block">Attachments</label>
               <div className="grid grid-cols-3 gap-3">
                 {displayImages.map((path: string, idx: number) => {
-                  const hasImage = path && path.trim() !== "";
-                  const src = hasImage 
-                    ? `http://localhost:8080/uploads/${path.split('/').pop()?.split('\\').pop()}`
-                    : "https://placehold.co/128x128/f1f5f9/94a3b8?text=Placeholder";
+                  const fileName = path.split('/').pop()?.split('\\').pop();
+                  const src = `http://localhost:8080/uploads/${fileName}`;
 
                   return (
                     <div key={idx} className="relative aspect-square w-full">
@@ -179,10 +178,8 @@ function TicketDetailView({ ticket, onClose, onUpdated }: TicketDetailViewProps)
                   );
                 })}
               </div>
-            ) : (
-              <p className="text-sm text-slate-400 py-4 italic">No image attachments provided.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Discussion */}
           <div className="border-t border-slate-100 pt-6">
@@ -211,11 +208,11 @@ function TicketDetailView({ ticket, onClose, onUpdated }: TicketDetailViewProps)
                 placeholder="Write a message..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
               />
               <button
                 className="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors"
-                onClick={handleAddComment}
+                onClick={handlePostComment}
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -237,14 +234,14 @@ function TicketDetailView({ ticket, onClose, onUpdated }: TicketDetailViewProps)
           <div className="flex gap-3">
              <button
               className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all disabled:opacity-50"
-              onClick={() => handleStatusChange('IN_PROGRESS')}
+              onClick={() => handleStatusUpdate('IN_PROGRESS')}
               disabled={updating || ticket.status === 'IN_PROGRESS'}
             >
               Start Progress
             </button>
             <button
               className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all disabled:opacity-50"
-              onClick={() => handleStatusChange('RESOLVED')}
+              onClick={() => handleStatusUpdate('RESOLVED')}
               disabled={updating || ticket.status === 'RESOLVED'}
             >
               {updating ? 'Updating...' : 'Mark as Resolved'}

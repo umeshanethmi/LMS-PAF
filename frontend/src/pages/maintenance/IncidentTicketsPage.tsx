@@ -5,7 +5,8 @@ import {
   CheckCircle2, 
   Clock, 
   LayoutDashboard, 
-  Ticket as TicketIcon 
+  Ticket as TicketIcon,
+  X 
 } from 'lucide-react';
 import TicketCreateForm from '../../components/tickets/TicketCreateForm';
 import TicketList from '../../components/tickets/TicketList';
@@ -87,6 +88,8 @@ function IncidentTicketsPage() {
     }
   };
 
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
   useEffect(() => {
     loadTickets();
   }, []);
@@ -97,14 +100,22 @@ function IncidentTicketsPage() {
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl"></div>
         <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-purple-500/20 blur-3xl"></div>
         
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-5">
-          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-md shadow-inner border border-white/10 ring-1 ring-white/5">
-            <LayoutDashboard className="h-9 w-9 text-indigo-300 drop-shadow-sm" />
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="flex items-center gap-5">
+            <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-md shadow-inner border border-white/10 ring-1 ring-white/5">
+              <LayoutDashboard className="h-9 w-9 text-indigo-300 drop-shadow-sm" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">Incident Dashboard</h1>
+              <p className="mt-1.5 text-[15px] font-medium text-indigo-200/80">Track incidents, manage maintenance, and monitor resolution progress.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">Incident Dashboard</h1>
-            <p className="mt-1.5 text-[15px] font-medium text-indigo-200/80">Track incidents, manage maintenance, and monitor resolution progress.</p>
-          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="rounded-2xl bg-indigo-500 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-indigo-500/20 hover:bg-indigo-400 hover:scale-105 transition-all ring-1 ring-white/20 active:scale-95"
+          >
+            Report New Incident
+          </button>
         </div>
 
         <div className="relative z-10 mt-10 grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
@@ -142,32 +153,43 @@ function IncidentTicketsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
-          <TicketCreateForm
-            currentUserId={currentUserId}
-            onCreated={loadTickets}
-          />
-        </div>
-        
-        <div className="lg:col-span-2">
-          {loading ? (
-            <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200/50 bg-white/50 backdrop-blur-sm shadow-sm">
-              <div className="flex items-center gap-3 text-slate-500">
-                <Clock className="h-5 w-5 animate-spin" />
-                <span className="font-medium">Loading tickets...</span>
-              </div>
+      <div className="w-full">
+        {loading ? (
+          <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200/50 bg-white/50 backdrop-blur-sm shadow-sm">
+            <div className="flex items-center gap-3 text-slate-500">
+              <Clock className="h-5 w-5 animate-spin" />
+              <span className="font-medium">Loading tickets...</span>
             </div>
-          ) : (
-            <TicketList
-              tickets={tickets}
-              onSelectTicket={setSelectedTicket}
-              onAssignTechnician={isAdmin ? setAssigningTicket : undefined}
-              isAdmin={isAdmin}
-            />
-          )}
-        </div>
+          </div>
+        ) : (
+          <TicketList
+            tickets={tickets}
+            onSelectTicket={setSelectedTicket}
+            onAssignTechnician={isAdmin ? setAssigningTicket : undefined}
+            isAdmin={isAdmin}
+          />
+        )}
       </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-300">
+           <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto">
+             <button 
+                onClick={() => setShowCreateModal(false)}
+                className="absolute right-4 top-4 z-10 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+             >
+               <X className="h-5 w-5" />
+             </button>
+             <TicketCreateForm
+                currentUserId={currentUserId}
+                onCreated={() => {
+                  loadTickets();
+                  setShowCreateModal(false);
+                }}
+              />
+           </div>
+        </div>
+      )}
 
       {selectedTicket && (
         <TicketDetailView

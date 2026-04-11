@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/maintenancetickets")
@@ -34,7 +35,7 @@ public class MaintenanceTicketController {
         
         if (files != null && files.length > 3) {
             return ResponseEntity.badRequest()
-                    .body("Maximum 3 images allowed");
+                    .body("You can only upload up to 3 images");
         }
 
         try {
@@ -74,13 +75,17 @@ public class MaintenanceTicketController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestParam("status") String status) {
+    public ResponseEntity<Object> updateStatus(@PathVariable Long id, @RequestParam("status") String status) {
         try {
-            return repository.findById(id).map(ticket -> {
+            Optional<MaintenanceTicket> ticketOpt = repository.findById(id);
+            if (ticketOpt.isPresent()) {
+                MaintenanceTicket ticket = ticketOpt.get();
                 ticket.setStatus(MaintenanceTicket.Status.valueOf(status.toUpperCase()));
                 ticket.setUpdatedAt(LocalDateTime.now());
                 return ResponseEntity.ok(repository.save(ticket));
-            }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Ticket not found with id: " + id));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Ticket not found with id: " + id);
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error updating status: " + e.getMessage());
@@ -88,13 +93,17 @@ public class MaintenanceTicketController {
     }
 
     @PutMapping("/{id}/assign")
-    public ResponseEntity<?> assignTechnicianPut(@PathVariable Long id, @RequestParam("technicianId") String technicianId) {
+    public ResponseEntity<Object> assignTechnicianPut(@PathVariable Long id, @RequestParam("technicianId") String technicianId) {
         try {
-            return repository.findById(id).map(ticket -> {
+            Optional<MaintenanceTicket> ticketOpt = repository.findById(id);
+            if (ticketOpt.isPresent()) {
+                MaintenanceTicket ticket = ticketOpt.get();
                 ticket.setAssignedTechnicianId(technicianId);
                 ticket.setUpdatedAt(LocalDateTime.now());
                 return ResponseEntity.ok(repository.save(ticket));
-            }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Ticket not found"));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Ticket not found");
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error assigning technician: " + e.getMessage());
