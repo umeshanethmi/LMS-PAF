@@ -22,15 +22,15 @@ public class TicketComment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ticket_id")
-    private MaintenanceTicket maintenanceTicket;
+    private Ticket ticket;
 
     @Transient
     @JsonProperty("ticketId")
     public void setTicketId(Long ticketId) {
-        if (this.maintenanceTicket == null) {
-            this.maintenanceTicket = new MaintenanceTicket();
+        if (this.ticket == null) {
+            this.ticket = new Ticket();
         }
-        this.maintenanceTicket.setId(ticketId);
+        this.ticket.setId(ticketId);
     }
 
     private Long userId;
