@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { createTicket } from '../../services/ticketApi';
+import axios from 'axios';
 import FileUpload from '../common/FileUpload';
 import { Loader2, PlusCircle, PenLine, Settings, MapPin, Hash, Phone } from 'lucide-react';
 
@@ -27,7 +27,6 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
     }
 
     const formData = new FormData();
-    formData.append('currentUserId', String(currentUserId));
     formData.append('resourceId', resourceId);
     formData.append('description', description);
     formData.append('category', category);
@@ -35,12 +34,15 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
     formData.append('location', location);
     formData.append('contactDetails', contactDetails);
     files.forEach((file) => {
-      formData.append('files', file);
+      formData.append('images', file); // 'files' වෙනුවට 'images' දාන්න
     });
 
     setLoading(true);
     try {
-      await createTicket(formData);
+      await axios.post('http://localhost:8080/api/tickets', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      alert('Incident ticket saved successfully!');
       setResourceId('');
       setDescription('');
       setCategory('');

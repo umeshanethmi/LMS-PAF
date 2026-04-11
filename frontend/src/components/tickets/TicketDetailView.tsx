@@ -70,14 +70,26 @@ function TicketDetailView({ ticket, onClose, onUpdated, currentUserId, role }: T
           <h3 className="mb-1 font-semibold text-slate-800">Attachments</h3>
           {ticket.attachments && ticket.attachments.length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              {ticket.attachments.map((a) => (
-                <img
-                  key={a.id}
-                  src={a.fileUrl || a.imagePath}
-                  alt={a.imagePath}
-                  className="w-24 h-24 object-cover border rounded"
-                />
-              ))}
+              {ticket.attachments.map((a) => {
+                const rawPath = a.fileUrl || a.imagePath || '';
+                const normalizedPath = rawPath.replace(/\\/g, '/');
+                const fullUrl = normalizedPath.startsWith('http') 
+                  ? normalizedPath 
+                  : `http://localhost:8080/${normalizedPath.startsWith('/') ? normalizedPath.substring(1) : normalizedPath}`;
+                
+                return (
+                  <img
+                    key={a.id}
+                    src={fullUrl}
+                    alt="Ticket Attachment"
+                    className="w-24 h-24 object-cover border rounded bg-slate-50"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://placehold.co/100x100/f8fafc/94a3b8?text=Error';
+                    }}
+                  />
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-gray-500">No attachments</p>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import { 
   AlertCircle, 
   CheckCircle2, 
@@ -9,7 +10,7 @@ import {
 import TicketCreateForm from '../../components/tickets/TicketCreateForm';
 import TicketList from '../../components/tickets/TicketList';
 import TicketDetailView from '../../components/tickets/TicketDetailView';
-import { assignTechnician, getAllTickets } from '../../services/ticketApi';
+import { assignTechnician } from '../../services/ticketApi';
 import type { Ticket, TicketRole } from '../../services/ticketApi';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -46,7 +47,8 @@ function IncidentTicketsPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAllTickets();
+      const response = await axios.get('http://localhost:8080/api/tickets');
+      const data = response.data;
       if (Array.isArray(data)) {
         setTickets(data);
       } else {
