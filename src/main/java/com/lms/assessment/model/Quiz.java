@@ -48,12 +48,12 @@ public class Quiz {
     @Column(nullable = false)
     private Boolean published = false;
 
-    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuizQuestion> questions = new ArrayList<>();
 
-    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuizAttempt> attempts = new ArrayList<>();
 
     @CreationTimestamp
