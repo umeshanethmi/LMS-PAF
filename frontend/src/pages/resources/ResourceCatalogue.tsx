@@ -18,10 +18,44 @@ const TYPE_ICONS: Record<ResourceType, string> = {
   EQUIPMENT: '📷',
 };
 
+const TYPE_HEADER_STYLES: Record<ResourceType, string> = {
+  LECTURE_HALL: 'bg-gradient-to-r from-indigo-50 to-indigo-100 border-indigo-100',
+  LAB: 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100',
+  MEETING_ROOM: 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-100',
+  EQUIPMENT: 'bg-gradient-to-r from-purple-50 to-violet-50 border-purple-100',
+};
+
 const STATUS_STYLES: Record<ResourceStatus, string> = {
   ACTIVE: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   OUT_OF_SERVICE: 'bg-red-100 text-red-700 border border-red-200',
 };
+
+const DAY_LABELS: Record<string, string> = {
+  MON: 'Mon', TUE: 'Tue', WED: 'Wed', THU: 'Thu',
+  FRI: 'Fri', SAT: 'Sat', SUN: 'Sun',
+};
+
+function parseSchedule(availableDays: string | null): { day: string; start?: string; end?: string }[] {
+  if (!availableDays) return [];
+  if (availableDays.includes(':')) {
+    return availableDays.split(',').map(part => {
+      const colonIdx = part.indexOf(':');
+      const day = part.slice(0, colonIdx).trim();
+      const times = part.slice(colonIdx + 1).trim();
+      const dashIdx = times.indexOf('-');
+      return { day, start: times.slice(0, dashIdx), end: times.slice(dashIdx + 1) };
+    });
+  }
+  return availableDays.split(',').map(day => ({ day: day.trim() }));
+}
+
+function fmt(t: string) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return m === 0 ? `${hour}${ampm}` : `${hour}:${String(m).padStart(2, '0')}${ampm}`;
+}
 
 export default function ResourceCatalogue() {
   const { role } = useAuth();
@@ -230,7 +264,7 @@ export default function ResourceCatalogue() {
               className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
             >
               {/* Card Header */}
-              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-5 py-4 border-b border-gray-100 flex justify-between items-start">
+              <div className={`px-5 py-4 border-b flex justify-between items-start ${TYPE_HEADER_STYLES[resource.type]}`}>
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{TYPE_ICONS[resource.type]}</span>
                   <div>
@@ -262,9 +296,15 @@ export default function ResourceCatalogue() {
                   </div>
                 )}
                 {resource.availableDays && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>📅</span>
-                    <span>{resource.availableDays}</span>
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <span className="mt-0.5">📅</span>
+                    <div className="flex flex-wrap gap-1">
+                      {resource.availableDays.split(',').map(day => (
+                        <span key={day} className="bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-medium px-1.5 py-0.5 rounded">
+                          {DAY_LABELS[day.trim()] ?? day.trim()}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {resource.description && (
@@ -273,34 +313,37 @@ export default function ResourceCatalogue() {
               </div>
 
               {/* Card Footer */}
-              <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center gap-3 flex-wrap">
+              <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
                 <Link
                   to={`/resources/${resource.id}`}
-                  className="text-sm text-indigo-600 font-medium hover:text-indigo-800"
+                  className="text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors"
                 >
                   View Details →
                 </Link>
                 {role === 'instructor' && (
-                  <>
-                    <span className="text-gray-300 text-xs">|</span>
-                    <Link to={`/resources/${resource.id}/edit`} className="text-sm text-gray-500 hover:text-blue-600">
-                      Edit
+                  <div className="flex items-center gap-1">
+                    <Link
+                      to={`/resources/${resource.id}/edit`}
+                      className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      title="Edit"
+                    >
+                      ✏️
                     </Link>
-                    <span className="text-gray-300 text-xs">|</span>
                     <button
                       onClick={() => handleToggleStatus(resource)}
-                      className="text-sm text-amber-600 hover:text-amber-800"
+                      className="p-1.5 rounded-md text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                      title={resource.status === 'ACTIVE' ? 'Disable' : 'Enable'}
                     >
-                      {resource.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+                      {resource.status === 'ACTIVE' ? '🔒' : '🔓'}
                     </button>
-                    <span className="text-gray-300 text-xs">|</span>
                     <button
                       onClick={() => handleDelete(resource.id)}
-                      className="text-sm text-red-500 hover:text-red-700"
+                      className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title="Delete"
                     >
-                      Delete
+                      🗑️
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>

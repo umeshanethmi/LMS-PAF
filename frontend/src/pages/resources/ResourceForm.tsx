@@ -1,201 +1,216 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { resourceService } from '../../services/resourceService';
 import type { CreateResourceRequest } from '../../services/resourceService';
 
 const DAYS = [
-  { key: 'MON', label: 'Mon' },
-  { key: 'TUE', label: 'Tue' },
-  { key: 'WED', label: 'Wed' },
-  { key: 'THU', label: 'Thu' },
-  { key: 'FRI', label: 'Fri' },
-  { key: 'SAT', label: 'Sat' },
-  { key: 'SUN', label: 'Sun' },
+  { key: 'MON', label: 'Monday' },
+  { key: 'TUE', label: 'Tuesday' },
+  { key: 'WED', label: 'Wednesday' },
+  { key: 'THU', label: 'Thursday' },
+  { key: 'FRI', label: 'Friday' },
+  { key: 'SAT', label: 'Saturday' },
+  { key: 'SUN', label: 'Sunday' },
 ];
 
-function DayPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const selected = value ? value.split(',').filter(Boolean) : [];
+type DaySchedule = { enabled: boolean; start: string; end: string };
+type ScheduleMap = Record<string, DaySchedule>;
 
-  const toggle = (day: string) => {
-    const next = selected.includes(day)
-      ? selected.filter(d => d !== day)
-      : [...selected, day];
-    // preserve order
-    onChange(DAYS.filter(d => next.includes(d.key)).map(d => d.key).join(','));
+const DEFAULT_SCHEDULE: ScheduleMap = Object.fromEntries(
+  DAYS.map(d => [d.key, { enabled: false, start: '08:00', end: '17:00' }])
+);
+
+function parseDaySchedules(encoded: string | null | undefined): ScheduleMap {
+  const result: ScheduleMap = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+  if (!encoded) return result;
+
+  if (encoded.includes(':')) {
+    // New format: MON:08:00-17:00,SAT:10:00-14:00
+    encoded.split(',').forEach(part => {
+      const colonIdx = part.indexOf(':');
+      if (colonIdx === -1) return;
+      const day = part.slice(0, colonIdx).trim();
+      const times = part.slice(colonIdx + 1).trim();
+      const dashIdx = times.indexOf('-');
+      if (dashIdx === -1) return;
+      const start = times.slice(0, dashIdx);
+      const end = times.slice(dashIdx + 1);
+      if (result[day]) result[day] = { enabled: true, start, end };
+    });
+  } else {
+    // Old format: MON,TUE,WED
+    encoded.split(',').forEach(day => {
+      const key = day.trim();
+      if (result[key]) result[key].enabled = true;
+    });
+  }
+  return result;
+}
+
+function encodeDaySchedules(schedules: ScheduleMap): string {
+  return DAYS
+    .filter(d => schedules[d.key]?.enabled)
+    .map(d => `${d.key}:${schedules[d.key].start}-${schedules[d.key].end}`)
+    .join(',');
+}
+
+function DayScheduleEditor({
+  value,
+  onChange,
+}: {
+  value: ScheduleMap;
+  onChange: (v: ScheduleMap) => void;
+}) {
+  const toggle = (key: string) =>
+    onChange({ ...value, [key]: { ...value[key], enabled: !value[key].enabled } });
+
+  const setTime = (key: string, field: 'start' | 'end', time: string) =>
+    onChange({ ...value, [key]: { ...value[key], [field]: time } });
+
+  const applyToAll = (start: string, end: string) => {
+    const next: ScheduleMap = {};
+    DAYS.forEach(d => { next[d.key] = { ...value[d.key], start, end }; });
+    onChange(next);
   };
 
-  const selectAll = () => onChange(DAYS.map(d => d.key).join(','));
-  const clearAll = () => onChange('');
-  const selectWeekdays = () => onChange('MON,TUE,WED,THU,FRI');
-  const selectWeekend = () => onChange('SAT,SUN');
+  const applyPreset = (keys: string[], start: string, end: string) => {
+    const next = { ...value };
+    DAYS.forEach(d => { next[d.key] = { ...next[d.key], enabled: false }; });
+    keys.forEach(k => { next[k] = { ...next[k], enabled: true, start, end }; });
+    onChange(next);
+  };
+
+  const enabledCount = DAYS.filter(d => value[d.key]?.enabled).length;
+
+  // Find if there's a "reference" time from any enabled day for "apply to all"
+  const firstEnabled = DAYS.find(d => value[d.key]?.enabled);
 
   return (
-    <div className="space-y-3">
-      {/* Quick presets */}
+    <div className="space-y-4">
+      {/* Quick Presets */}
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={selectAll}
-          className="text-xs px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors">
-          All Days
+        <button
+          type="button"
+          onClick={() => applyPreset(['MON','TUE','WED','THU','FRI'], '08:00', '17:00')}
+          className="text-xs px-3 py-1.5 rounded-full border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+        >
+          Weekdays (8–5)
         </button>
-        <button type="button" onClick={selectWeekdays}
-          className="text-xs px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors">
-          Weekdays
+        <button
+          type="button"
+          onClick={() => applyPreset(['SAT','SUN'], '10:00', '14:00')}
+          className="text-xs px-3 py-1.5 rounded-full border border-amber-200 text-amber-600 hover:bg-amber-50 transition-colors font-medium"
+        >
+          Weekend (10–2)
         </button>
-        <button type="button" onClick={selectWeekend}
-          className="text-xs px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors">
-          Weekend
+        <button
+          type="button"
+          onClick={() => applyPreset(DAYS.map(d => d.key), '08:00', '17:00')}
+          className="text-xs px-3 py-1.5 rounded-full border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
+        >
+          All Days (8–5)
         </button>
-        <button type="button" onClick={clearAll}
-          className="text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
-          Clear
+        {firstEnabled && (
+          <button
+            type="button"
+            onClick={() => applyToAll(value[firstEnabled.key].start, value[firstEnabled.key].end)}
+            className="text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-50 transition-colors font-medium"
+          >
+            Copy first to all
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => onChange(JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)))}
+          className="text-xs px-3 py-1.5 rounded-full border border-red-200 text-red-500 hover:bg-red-50 transition-colors font-medium"
+        >
+          Clear all
         </button>
       </div>
 
-      {/* Day toggle buttons */}
-      <div className="flex gap-2">
+      {/* Per-day rows */}
+      <div className="space-y-2">
         {DAYS.map(({ key, label }) => {
-          const active = selected.includes(key);
+          const s = value[key];
+          const isWeekend = key === 'SAT' || key === 'SUN';
           return (
-            <button
+            <div
               key={key}
-              type="button"
-              onClick={() => toggle(key)}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${
-                active
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                  : 'bg-white text-gray-500 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
+                s.enabled
+                  ? isWeekend
+                    ? 'border-amber-200 bg-amber-50/40'
+                    : 'border-indigo-200 bg-indigo-50/30'
+                  : 'border-gray-100 bg-gray-50'
               }`}
             >
-              {label}
-            </button>
+              {/* Toggle */}
+              <button
+                type="button"
+                onClick={() => toggle(key)}
+                className={`w-9 h-5 rounded-full transition-colors flex-shrink-0 relative ${
+                  s.enabled ? (isWeekend ? 'bg-amber-400' : 'bg-indigo-500') : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                    s.enabled ? 'left-4' : 'left-0.5'
+                  }`}
+                />
+              </button>
+
+              {/* Day label */}
+              <span className={`w-24 text-sm font-medium flex-shrink-0 ${s.enabled ? 'text-gray-800' : 'text-gray-400'}`}>
+                {label}
+              </span>
+
+              {s.enabled ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="time"
+                    value={s.start}
+                    onChange={e => setTime(key, 'start', e.target.value)}
+                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent w-32"
+                  />
+                  <span className="text-gray-400 text-sm">–</span>
+                  <input
+                    type="time"
+                    value={s.end}
+                    onChange={e => setTime(key, 'end', e.target.value)}
+                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent w-32"
+                  />
+                  {s.start && s.end && s.end > s.start && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                      isWeekend ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700'
+                    }`}>
+                      {(() => {
+                        const [sh, sm] = s.start.split(':').map(Number);
+                        const [eh, em] = s.end.split(':').map(Number);
+                        const mins = (eh * 60 + em) - (sh * 60 + sm);
+                        const h = Math.floor(mins / 60);
+                        const m = mins % 60;
+                        return `${h > 0 ? `${h}h` : ''}${m > 0 ? ` ${m}m` : ''}`;
+                      })()}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-xs text-gray-400 italic">Closed</span>
+              )}
+            </div>
           );
         })}
       </div>
 
-      {/* Selected summary */}
-      {selected.length > 0 ? (
+      {/* Summary */}
+      {enabledCount > 0 ? (
         <p className="text-xs text-indigo-600 font-medium">
-          {selected.length === 7
-            ? 'Available every day'
-            : selected.length === 5 && !selected.includes('SAT') && !selected.includes('SUN')
-            ? 'Available on weekdays'
-            : `Available on: ${selected.join(', ')}`}
+          Open {enabledCount} day{enabledCount !== 1 ? 's' : ''} per week
         </p>
       ) : (
-        <p className="text-xs text-gray-400">No days selected</p>
+        <p className="text-xs text-gray-400">No days selected — toggle days to set availability</p>
       )}
-    </div>
-  );
-}
-
-function TimeRangeInput({
-  startValue, endValue,
-  onStartChange, onEndChange,
-}: {
-  startValue: string; endValue: string;
-  onStartChange: (v: string) => void; onEndChange: (v: string) => void;
-}) {
-  const toMinutes = (t: string) => {
-    if (!t) return 0;
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + m;
-  };
-
-  const toPercent = (t: string) => (toMinutes(t) / (24 * 60)) * 100;
-
-  const startMin = startValue ? toMinutes(startValue) : 0;
-  const endMin = endValue ? toMinutes(endValue) : 0;
-  const duration = endMin > startMin ? endMin - startMin : 0;
-  const durationHrs = Math.floor(duration / 60);
-  const durationMins = duration % 60;
-
-  const left = startValue ? toPercent(startValue) : 0;
-  const width = startValue && endValue && endMin > startMin
-    ? toPercent(endValue) - toPercent(startValue)
-    : 0;
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Opens At</label>
-          <input
-            type="time"
-            value={startValue}
-            onChange={e => onStartChange(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Closes At</label>
-          <input
-            type="time"
-            value={endValue}
-            onChange={e => onEndChange(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Visual timeline bar */}
-      <div>
-        <div className="flex justify-between text-xs text-gray-400 mb-1">
-          <span>12 AM</span>
-          <span>6 AM</span>
-          <span>12 PM</span>
-          <span>6 PM</span>
-          <span>12 AM</span>
-        </div>
-        <div className="relative h-5 bg-gray-100 rounded-full overflow-hidden border border-gray-200">
-          {width > 0 && (
-            <div
-              className="absolute top-0 h-full bg-indigo-500 rounded-full transition-all duration-300"
-              style={{ left: `${left}%`, width: `${width}%` }}
-            />
-          )}
-        </div>
-
-        {/* Duration badge */}
-        {duration > 0 ? (
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-xs text-indigo-600 font-medium">
-              {startValue} → {endValue}
-            </p>
-            <span className="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2 py-0.5 rounded-full font-medium">
-              {durationHrs > 0 ? `${durationHrs}h ` : ''}{durationMins > 0 ? `${durationMins}m` : ''} window
-            </span>
-          </div>
-        ) : (
-          <p className="text-xs text-gray-400 mt-2">Select start and end times to preview</p>
-        )}
-      </div>
-
-      {/* Quick presets */}
-      <div>
-        <p className="text-xs text-gray-500 mb-2 font-medium">Quick presets:</p>
-        <div className="flex flex-wrap gap-2">
-          {[
-            { label: 'Morning (8 AM – 12 PM)', start: '08:00', end: '12:00' },
-            { label: 'Afternoon (1 PM – 5 PM)', start: '13:00', end: '17:00' },
-            { label: 'Business Hours (8 AM – 5 PM)', start: '08:00', end: '17:00' },
-            { label: 'Full Day (7 AM – 10 PM)', start: '07:00', end: '22:00' },
-          ].map(preset => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => { onStartChange(preset.start); onEndChange(preset.end); }}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                startValue === preset.start && endValue === preset.end
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
-              }`}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -205,10 +220,9 @@ export default function ResourceForm() {
   const navigate = useNavigate();
   const isEdit = Boolean(id);
   const [pageLoading, setPageLoading] = useState(isEdit);
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [daySchedules, setDaySchedules] = useState<ScheduleMap>(JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)));
 
-  const { register, handleSubmit, reset, control, setValue, formState: { errors, isSubmitting } } = useForm<CreateResourceRequest>();
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CreateResourceRequest>();
 
   useEffect(() => {
     if (isEdit && id) {
@@ -221,13 +235,9 @@ export default function ResourceForm() {
           location: r.location,
           description: r.description,
           status: r.status,
-          availabilityStart: r.availabilityStart ?? undefined,
-          availabilityEnd: r.availabilityEnd ?? undefined,
-          availableDays: r.availableDays ?? undefined,
           imageUrl: r.imageUrl ?? undefined,
         });
-        setStartTime(r.availabilityStart ?? '');
-        setEndTime(r.availabilityEnd ?? '');
+        setDaySchedules(parseDaySchedules(r.availableDays));
         setPageLoading(false);
       }).catch(() => {
         alert('Failed to load resource.');
@@ -236,18 +246,14 @@ export default function ResourceForm() {
     }
   }, [id]);
 
-  const handleStartChange = (v: string) => {
-    setStartTime(v);
-    setValue('availabilityStart', v);
-  };
-
-  const handleEndChange = (v: string) => {
-    setEndTime(v);
-    setValue('availabilityEnd', v);
-  };
-
   const onSubmit = async (data: CreateResourceRequest) => {
-    const payload = { ...data, availabilityStart: startTime || undefined, availabilityEnd: endTime || undefined };
+    const encoded = encodeDaySchedules(daySchedules);
+    const payload: CreateResourceRequest = {
+      ...data,
+      availableDays: encoded || undefined,
+      availabilityStart: undefined,
+      availabilityEnd: undefined,
+    };
     try {
       if (isEdit && id) {
         await resourceService.update(Number(id), payload);
@@ -371,39 +377,17 @@ export default function ResourceForm() {
             </div>
           </div>
 
-          {/* Availability Window */}
+          {/* Availability Schedule */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Availability Window</h2>
+                <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Weekly Schedule</h2>
                 <span className="text-xs text-gray-400">Optional</span>
               </div>
-              <p className="text-xs text-gray-400 mt-0.5">Set when this resource can be booked</p>
+              <p className="text-xs text-gray-400 mt-0.5">Set opening hours per day — weekdays and weekends can differ</p>
             </div>
-            <div className="p-6 space-y-6">
-
-              {/* Time Range */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Daily Hours</label>
-                <TimeRangeInput
-                  startValue={startTime}
-                  endValue={endTime}
-                  onStartChange={handleStartChange}
-                  onEndChange={handleEndChange}
-                />
-              </div>
-
-              <div className="border-t border-gray-100 pt-5">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Available Days</label>
-                <Controller
-                  name="availableDays"
-                  control={control}
-                  defaultValue=""
-                  render={({ field }) => (
-                    <DayPicker value={field.value ?? ''} onChange={field.onChange} />
-                  )}
-                />
-              </div>
+            <div className="p-6">
+              <DayScheduleEditor value={daySchedules} onChange={setDaySchedules} />
             </div>
           </div>
 
