@@ -59,6 +59,8 @@ public class FileStorageServiceImpl implements FileStorageService {
             String targetFileName = UUID.randomUUID().toString() + fileExtension;
             
             Path targetDirectory = this.fileStorageLocation;
+            Files.createDirectories(targetDirectory);
+            
             if (subdirectory != null && !subdirectory.isBlank()) {
                 targetDirectory = targetDirectory.resolve(subdirectory).normalize();
                 Files.createDirectories(targetDirectory);

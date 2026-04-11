@@ -47,7 +47,7 @@ function IncidentTicketsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get('http://localhost:8080/api/tickets');
+      const response = await axios.get('http://localhost:8080/api/maintenancetickets');
       const data = response.data;
       if (Array.isArray(data)) {
         setTickets(data);

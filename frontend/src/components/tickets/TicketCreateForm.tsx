@@ -39,7 +39,7 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
 
     setLoading(true);
     try {
-      await axios.post('http://localhost:8080/api/tickets', formData, {
+      await axios.post('http://localhost:8080/api/maintenancetickets', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert('Incident ticket saved successfully!');
@@ -52,7 +52,7 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
       setFiles([]);
       onCreated();
     } catch (error) {
-      console.error('Failed to create ticket', error);
+      console.dir(error);
       alert('Failed to create ticket');
     } finally {
       setLoading(false);
