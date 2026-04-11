@@ -49,8 +49,8 @@ public class Assignment {
     @Column(nullable = false)
     private Boolean published = false;
 
-    @Builder.Default
     @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<AssignmentSubmission> submissions = new ArrayList<>();
 
     @CreationTimestamp

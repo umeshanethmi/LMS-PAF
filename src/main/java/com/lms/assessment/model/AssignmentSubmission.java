@@ -25,7 +25,7 @@ public class AssignmentSubmission {
     private Assignment assignment;
 
     // Reference to external student/user ID
-    @Column(name = "student_id", nullable = false)
+    @Column(nullable = false)
     private Long studentId;
 
     @CreationTimestamp
