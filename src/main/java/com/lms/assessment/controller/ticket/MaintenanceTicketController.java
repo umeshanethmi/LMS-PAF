@@ -75,12 +75,18 @@ public class MaintenanceTicketController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Object> updateStatus(@PathVariable Long id, @RequestParam("status") String status) {
+    public ResponseEntity<Object> updateStatus(
+            @PathVariable Long id, 
+            @RequestParam("status") String status,
+            @RequestParam(value = "resolutionNotes", required = false) String resolutionNotes) {
         try {
             Optional<MaintenanceTicket> ticketOpt = repository.findById(id);
             if (ticketOpt.isPresent()) {
                 MaintenanceTicket ticket = ticketOpt.get();
                 ticket.setStatus(MaintenanceTicket.Status.valueOf(status.toUpperCase()));
+                if (resolutionNotes != null) {
+                    ticket.setResolutionNotes(resolutionNotes);
+                }
                 ticket.setUpdatedAt(LocalDateTime.now());
                 return ResponseEntity.ok(repository.save(ticket));
             } else {

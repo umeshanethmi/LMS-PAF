@@ -10,12 +10,14 @@ export interface TicketAttachmentResponse {
 export interface TicketCommentResponse {
   id: number;
   ticketId: number;
-  userId: number;
-  authorUserId?: number;
+  authorUserId: number;
   content: string;
   timestamp: string;
-  createdAt?: string;
 }
+
+export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH';
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'REJECTED';
+export type TicketRole = 'USER' | 'ADMIN' | 'TECHNICIAN';
 
 export interface Ticket {
   id: number;
@@ -23,8 +25,8 @@ export interface Ticket {
   title?: string;
   description: string;
   category: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'REJECTED';
+  priority: TicketPriority;
+  status: TicketStatus;
   location: string;
   contactDetails: string;
   preferredContact?: string;
@@ -36,51 +38,51 @@ export interface Ticket {
   comments: TicketCommentResponse[];
 }
 
-export type TicketRole = 'USER' | 'ADMIN' | 'TECHNICIAN';
-
 export async function getAllTickets(): Promise<Ticket[]> {
-  const res = await apiClient.get<Ticket[]>(`/tickets`);
+  const res = await apiClient.get<Ticket[]>(`/maintenancetickets`);
+  return res.data;
+}
+
+export async function getTicketById(id: number): Promise<Ticket> {
+  const res = await apiClient.get<Ticket>(`/maintenancetickets/${id}`);
   return res.data;
 }
 
 export async function createTicket(formData: FormData): Promise<Ticket> {
-  const res = await apiClient.post<Ticket>(`/tickets`, formData, {
+  const res = await apiClient.post<Ticket>(`/maintenancetickets`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res.data;
 }
 
-export async function addTicketComment(ticketId: number, body: { content: string }, currentUserId: number) {
-  const res = await apiClient.post(`/tickets/${ticketId}/comments`, body, {
+export async function addTicketComment(ticketId: number, content: string, currentUserId: number) {
+  const res = await apiClient.post(`/maintenancetickets/${ticketId}/comments`, { content }, {
     params: { currentUserId },
   });
-  return res.data as TicketCommentResponse;
-}
-
-export async function deleteTicketComment(ticketId: number, commentId: number, currentUserId: number, role: TicketRole) {
-  await apiClient.delete(`/tickets/${ticketId}/comments/${commentId}`, {
-    params: { currentUserId, role },
-  });
+  return res.data;
 }
 
 export async function updateTicketStatus(
   ticketId: number,
-  body: { newStatus: Ticket['status']; resolutionNotes?: string },
+  newStatus: TicketStatus,
   currentUserId: number,
   role: TicketRole,
+  resolutionNotes?: string
 ) {
-  await apiClient.put(`/tickets/${ticketId}/status`, body, {
-    params: { currentUserId, role },
+  const res = await apiClient.patch(`/maintenancetickets/${ticketId}/status`, null, {
+    params: { status: newStatus, resolutionNotes }
   });
+  return res.data;
 }
 
 export async function assignTechnician(
   ticketId: number,
   technicianId: string,
   currentUserId: number,
-  role: TicketRole,
+  role: TicketRole
 ) {
-  await apiClient.put(`/tickets/${ticketId}/assign`, null, {
+  const res = await apiClient.put(`/maintenancetickets/${ticketId}/assign`, null, {
     params: { technicianId, currentUserId, role },
   });
+  return res.data;
 }

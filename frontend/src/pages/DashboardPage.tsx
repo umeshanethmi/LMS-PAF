@@ -2,8 +2,8 @@ import React from 'react';
 import { 
   Users, 
   Clock, 
-  CheckCircle2, 
-  AlertTriangle,
+  CircleCheck, 
+  TriangleAlert,
   TrendingUp,
   Calendar,
   MoreVertical
@@ -13,8 +13,8 @@ const DashboardPage = () => {
   const stats = [
     { label: 'Active Students', value: '1,284', change: '+12%', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
     { label: 'Pending Tickets', value: '42', change: '-5%', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100' },
-    { label: 'Resolved Today', value: '18', change: '+24%', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-    { label: 'Urgent Alerts', value: '3', change: '0%', icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-100' },
+    { label: 'Resolved Today', value: '18', change: '+24%', icon: CircleCheck, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+    { label: 'Urgent Alerts', value: '3', change: '0%', icon: TriangleAlert, color: 'text-rose-600', bg: 'bg-rose-100' },
   ];
 
   return (
