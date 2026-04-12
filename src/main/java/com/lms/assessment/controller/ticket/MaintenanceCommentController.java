@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/maintenancetickets/comments")
+@RequestMapping("/api/maintenance/comments")
 @CrossOrigin(origins = "http://localhost:5173")
 public class MaintenanceCommentController {
 

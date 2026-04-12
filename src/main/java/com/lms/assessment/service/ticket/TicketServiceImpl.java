@@ -5,8 +5,6 @@ import com.lms.assessment.exception.ForbiddenOperationException;
 import com.lms.assessment.exception.ResourceNotFoundException;
 import com.lms.assessment.exception.SubmissionException;
 import com.lms.assessment.model.ticket.*;
-import com.lms.assessment.repository.ticket.MaintenanceTicketCommentRepository;
-import com.lms.assessment.repository.ticket.MaintenanceTicketRepository;
 import com.lms.assessment.repository.ticket.TicketCommentRepository;
 import com.lms.assessment.repository.ticket.TicketRepository;
 import com.lms.assessment.service.FileStorageService;
@@ -30,16 +28,13 @@ public class TicketServiceImpl implements TicketService {
     private static final int MAX_ATTACHMENTS_PER_TICKET = 3;
 
     private final TicketRepository ticketRepository;
-    private final MaintenanceTicketRepository maintenanceTicketRepository;
     private final TicketCommentRepository commentRepository;
     private final FileStorageService fileStorageService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
-                             MaintenanceTicketRepository maintenanceTicketRepository,
                              TicketCommentRepository commentRepository,
                              FileStorageService fileStorageService) {
         this.ticketRepository = ticketRepository;
-        this.maintenanceTicketRepository = maintenanceTicketRepository;
         this.commentRepository = commentRepository;
         this.fileStorageService = fileStorageService;
     }
@@ -161,11 +156,11 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId) {
-        MaintenanceTicket ticket = maintenanceTicketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("MaintenanceTicket", "id", ticketId));
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
         TicketComment comment = TicketComment.builder()
-                .maintenanceTicket(ticket)
+                .ticket(ticket)
                 .userId(currentUserId)
                 .author("Staff") // Default for now
                 .message(request.getContent())
@@ -178,13 +173,13 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public void deleteComment(Long ticketId, Long commentId, Long currentUserId, TicketActorRole actorRole) {
-        MaintenanceTicket ticket = maintenanceTicketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("MaintenanceTicket", "id", ticketId));
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
         TicketComment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("TicketComment", "id", commentId));
 
-        if (!Objects.equals(comment.getMaintenanceTicket().getId(), ticket.getId())) {
+        if (!Objects.equals(comment.getTicket().getId(), ticket.getId())) {
             throw new SubmissionException("Comment does not belong to the specified ticket.");
         }
 
@@ -288,7 +283,7 @@ public class TicketServiceImpl implements TicketService {
                     .map(this::mapToAttachmentResponse)
                     .collect(Collectors.toList());
 
-            List<TicketComment> comments = commentRepository.findByMaintenanceTicketIdOrderByCreatedAtAsc(ticket.getId());
+            List<TicketComment> comments = commentRepository.findByTicketIdOrderByCreatedAtAsc(ticket.getId());
             commentResponses = comments.stream()
                     .map(this::mapToCommentResponse)
                     .collect(Collectors.toList());
@@ -326,7 +321,7 @@ public class TicketServiceImpl implements TicketService {
     private TicketCommentResponse mapToCommentResponse(TicketComment comment) {
         return TicketCommentResponse.builder()
                 .id(comment.getId())
-                .ticketId(comment.getMaintenanceTicket().getId())
+                .ticketId(comment.getTicket().getId())
                 .userId(comment.getUserId())
                 .authorUserId(comment.getUserId())
                 .content(comment.getMessage())
