@@ -26,6 +26,13 @@ interface TicketDetailViewProps {
   role: TicketRole;
 }
 
+const technicians = [
+  { id: 'TECH_TEST_01', name: 'John Doe (Electrical)' },
+  { id: 'TECH_EL_021', name: 'Jane Smith (Plumbing)' },
+  { id: 'TECH_003', name: 'Mike Johnson (Security)' },
+  { id: 'TECH_004', name: 'Sarah Wilson (General)' },
+];
+
 function TicketDetailView({ ticket, onClose, onUpdated, currentUserId, role }: TicketDetailViewProps) {
   const [comment, setComment] = useState('');
   const [updating, setUpdating] = useState(false);
@@ -146,11 +153,13 @@ function TicketDetailView({ ticket, onClose, onUpdated, currentUserId, role }: T
                 {ticket.priority}
               </span>
             </div>
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
+            <div className={`p-4 rounded-2xl border shadow-sm transition-all duration-300 ${ticket.assignedTechnicianId ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-100'}`}>
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5 mb-2">
-                <UserIcon className="w-3 h-3" /> Assigned
+                <UserIcon className={`w-3 h-3 ${ticket.assignedTechnicianId ? 'text-indigo-500' : 'text-slate-400'}`} /> Assigned
               </label>
-              <p className="text-slate-800 font-bold text-sm tracking-tight">{ticket.assignedTechnicianId || 'Unassigned'}</p>
+              <p className={`font-bold text-sm tracking-tight ${ticket.assignedTechnicianId ? 'text-indigo-900' : 'text-slate-800'}`}>
+                {technicians.find(t => t.id === ticket.assignedTechnicianId)?.name || ticket.assignedTechnicianId || 'Unassigned'}
+              </p>
             </div>
           </div>
 
@@ -202,12 +211,18 @@ function TicketDetailView({ ticket, onClose, onUpdated, currentUserId, role }: T
                <h3 className="font-bold text-lg">Admin Management</h3>
                <div className="flex gap-3">
                   <div className="flex-1">
-                    <input 
-                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/50 transition-all"
-                      placeholder="Tech ID (e.g. TECH-001)"
+                    <select 
+                      className="w-full bg-slate-800 border-2 border-slate-700/50 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-indigo-400 focus:bg-slate-800 transition-all appearance-none cursor-pointer"
                       value={techId}
                       onChange={(e) => setTechId(e.target.value)}
-                    />
+                    >
+                      <option value="" disabled className="bg-slate-900">Choose Expert...</option>
+                      {technicians.map(t => (
+                        <option key={t.id} value={t.id} className="bg-slate-900 text-white">
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <button 
                     onClick={handleAssign}

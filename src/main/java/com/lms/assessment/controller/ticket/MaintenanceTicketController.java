@@ -1,6 +1,8 @@
 package com.lms.assessment.controller.ticket;
 
+import com.lms.assessment.model.ticket.MaintenanceComment;
 import com.lms.assessment.model.ticket.MaintenanceTicket;
+import com.lms.assessment.repository.ticket.MaintenanceCommentRepository;
 import com.lms.assessment.repository.ticket.MaintenanceTicketRepository;
 import com.lms.assessment.service.FileStorageService;
 import org.springframework.http.HttpStatus;
@@ -21,10 +23,14 @@ import java.util.Optional;
 public class MaintenanceTicketController {
 
     private final MaintenanceTicketRepository repository;
+    private final MaintenanceCommentRepository commentRepository;
     private final FileStorageService fileStorageService;
 
-    public MaintenanceTicketController(MaintenanceTicketRepository repository, FileStorageService fileStorageService) {
+    public MaintenanceTicketController(MaintenanceTicketRepository repository, 
+                                     MaintenanceCommentRepository commentRepository,
+                                     FileStorageService fileStorageService) {
         this.repository = repository;
+        this.commentRepository = commentRepository;
         this.fileStorageService = fileStorageService;
     }
 
@@ -70,8 +76,74 @@ public class MaintenanceTicketController {
     }
 
     @GetMapping
-    public ResponseEntity<List<MaintenanceTicket>> getAllTickets() {
-        return ResponseEntity.ok(repository.findAll());
+    public ResponseEntity<List<Map<String, Object>>> getAllTickets() {
+        List<MaintenanceTicket> tickets = repository.findAll();
+        List<Map<String, Object>> responseList = new ArrayList<>();
+        
+        for (MaintenanceTicket ticket : tickets) {
+            responseList.add(mapToResponse(ticket));
+        }
+        
+        return ResponseEntity.ok(responseList);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Object> getTicketById(@PathVariable("id") Long id) {
+        Optional<MaintenanceTicket> ticketOpt = repository.findById(id);
+        if (ticketOpt.isPresent()) {
+            return ResponseEntity.ok(mapToResponse(ticketOpt.get()));
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Ticket not found");
+    }
+
+    private Map<String, Object> mapToResponse(MaintenanceTicket ticket) {
+        List<MaintenanceComment> comments = commentRepository.findByTicketIdOrderByTimestampAsc(ticket.getId());
+        
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("id", ticket.getId());
+        response.put("resourceId", ticket.getResourceId());
+        response.put("description", ticket.getDescription());
+        response.put("category", ticket.getCategory());
+        response.put("priority", ticket.getPriority());
+        response.put("location", ticket.getLocation());
+        response.put("contactDetails", ticket.getContactDetails());
+        response.put("status", ticket.getStatus());
+        response.put("assignedTechnicianId", ticket.getAssignedTechnicianId());
+        response.put("attachmentPaths", ticket.getAttachmentPaths());
+        response.put("resolutionNotes", ticket.getResolutionNotes());
+        response.put("createdAt", ticket.getCreatedAt());
+        response.put("updatedAt", ticket.getUpdatedAt());
+        response.put("comments", comments);
+        
+        return response;
+    }
+
+    @PostMapping("/{id}/comments")
+    @ResponseBody
+    public ResponseEntity<Object> addComment(
+            @PathVariable("id") Long id,
+            @RequestParam("currentUserId") Long currentUserId,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            Object contentObj = payload.get("content");
+            String content = contentObj != null ? contentObj.toString() : null;
+            
+            if (content == null || content.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Comment content is empty");
+            }
+
+            MaintenanceComment comment = new MaintenanceComment();
+            comment.setTicketId(id);
+            comment.setAuthorUserId(currentUserId);
+            comment.setContent(content);
+            comment.setTimestamp(LocalDateTime.now());
+            
+            MaintenanceComment saved = commentRepository.save(comment);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error adding comment: " + e.getMessage());
+        }
     }
 
     @PatchMapping("/{id}/status")

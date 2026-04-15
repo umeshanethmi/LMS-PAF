@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface MaintenanceCommentRepository extends JpaRepository<MaintenanceComment, Long> {
-    List<MaintenanceComment> findByTicketIdOrderByCreatedAtAsc(Long ticketId);
+    List<MaintenanceComment> findByTicketIdOrderByTimestampAsc(Long ticketId);
 }

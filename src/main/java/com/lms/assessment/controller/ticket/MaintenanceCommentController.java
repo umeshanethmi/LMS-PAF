@@ -22,14 +22,14 @@ public class MaintenanceCommentController {
 
     @PostMapping
     public ResponseEntity<MaintenanceComment> addComment(@RequestBody MaintenanceComment comment) {
-        comment.setCreatedAt(LocalDateTime.now());
+        comment.setTimestamp(LocalDateTime.now());
         MaintenanceComment savedComment = repository.save(comment);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedComment);
     }
 
     @GetMapping("/{ticketId}")
     public ResponseEntity<List<MaintenanceComment>> getComments(@PathVariable Long ticketId) {
-        List<MaintenanceComment> comments = repository.findByTicketIdOrderByCreatedAtAsc(ticketId);
+        List<MaintenanceComment> comments = repository.findByTicketIdOrderByTimestampAsc(ticketId);
         return ResponseEntity.ok(comments);
     }
 }

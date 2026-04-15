@@ -58,7 +58,7 @@ function IncidentTicketsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const currentUserId = 1; // Real implementation should get this from AuthContext
+  const currentUserId = role === 'admin' ? 999 : role === 'technician' ? 888 : 1; // Role-based IDs for testing
 
   const loadTickets = async () => {
     try {

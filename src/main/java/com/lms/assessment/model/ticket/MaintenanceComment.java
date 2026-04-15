@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Entity
 @Data
@@ -21,7 +22,9 @@ public class MaintenanceComment {
     private Long id;
 
     private Long ticketId;
-    private Long userId;
-    private String message;
-    private LocalDateTime createdAt;
+    private Long authorUserId;
+    private String content;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime timestamp;
 }

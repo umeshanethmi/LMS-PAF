@@ -35,6 +35,7 @@ public class MaintenanceTicket {
     private Status status;
 
     private String assignedTechnicianId;
+    private String resolutionNotes;
 
     @ElementCollection
     private List<String> attachmentPaths;
