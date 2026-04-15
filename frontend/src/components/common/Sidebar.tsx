@@ -71,6 +71,7 @@ const Sidebar = () => {
           <NavLink
             key={item.path}
             to={item.path}
+            state={item.label === 'Report Incident' ? { openCreateModal: true } : undefined}
             className={({ isActive }) => `
               flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group
               ${isActive 

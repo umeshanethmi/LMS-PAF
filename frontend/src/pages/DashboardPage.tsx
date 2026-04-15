@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   Clock, 
@@ -16,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const DashboardPage = () => {
   const { role } = useAuth();
+  const navigate = useNavigate();
 
   // Define stats based on role
   const getStats = () => {
@@ -51,20 +53,23 @@ const DashboardPage = () => {
         return {
           title: 'Welcome back, Admin! 👋',
           subtitle: 'Everything is looking great today. You have 3 urgent maintenance tickets that need your attention.',
-          buttonText: 'View Reports'
+          buttonText: 'View Reports',
+          path: '/tickets'
         };
       case 'technician':
         return {
           title: 'Hello, Team Lead! 🔧',
           subtitle: 'You have 5 pending maintenance tasks for this afternoon. Tools ready?',
-          buttonText: 'Start Working'
+          buttonText: 'Start Working',
+          path: '/tickets'
         };
       case 'user':
       default:
         return {
           title: 'Hi there, Resident! 👋',
           subtitle: 'Track your campus reports and see real-time updates on building maintenance.',
-          buttonText: 'Report Incident'
+          buttonText: 'Report Incident',
+          path: '/tickets'
         };
     }
   };
@@ -81,7 +86,10 @@ const DashboardPage = () => {
           <p className="mt-2 text-indigo-100 opacity-90 max-w-sm">
             {welcome.subtitle}
           </p>
-          <button className="mt-6 rounded-xl bg-white px-6 py-2.5 text-sm font-semibold text-indigo-600 shadow-lg transition-transform hover:scale-105 active:scale-95">
+          <button 
+            onClick={() => navigate(welcome.path, { state: { openCreateModal: welcome.buttonText === 'Report Incident' } })}
+            className="mt-6 rounded-xl bg-white px-6 py-2.5 text-sm font-semibold text-indigo-600 shadow-lg transition-transform hover:scale-105 active:scale-95"
+          >
             {welcome.buttonText}
           </button>
         </div>
@@ -124,7 +132,10 @@ const DashboardPage = () => {
             <h2 className="text-lg font-bold text-slate-800">
               {role === 'admin' ? 'System Activity' : role === 'technician' ? 'Current Workload' : 'My Recent Activity'}
             </h2>
-            <div className="flex items-center gap-2 text-sm font-medium text-indigo-600 cursor-pointer hover:underline">
+            <div 
+              onClick={() => navigate('/tickets')}
+              className="flex items-center gap-2 text-sm font-medium text-indigo-600 cursor-pointer hover:underline"
+            >
               <span>View details</span>
               <TrendingUp className="w-4 h-4" />
             </div>
@@ -157,7 +168,10 @@ const DashboardPage = () => {
               </div>
             ))}
           </div>
-          <button className="w-full mt-6 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-100 transition-all">
+          <button 
+            onClick={() => navigate(role === 'admin' ? '/settings' : role === 'technician' ? '/tickets' : '/profile')}
+            className="w-full mt-6 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-100 transition-all"
+          >
             {role === 'admin' ? 'Manage System' : role === 'technician' ? 'View Schedule' : 'View Full Calendar'}
           </button>
         </div>

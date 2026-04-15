@@ -245,7 +245,7 @@ function TicketDetailView({ ticket, onClose, onUpdated, currentUserId, role }: T
             <div className="p-6 rounded-[2rem] bg-rose-50 border border-rose-100 space-y-4 animate-in slide-in-from-top-2 duration-300">
                <div className="flex items-center justify-between">
                  <h3 className="text-rose-700 font-black tracking-tight flex items-center gap-2 uppercase text-xs">
-                    <AlertTriangle className="w-4 h-4" /> Mandatory Rejection Reason
+                    <TriangleAlert className="w-4 h-4" /> Mandatory Rejection Reason
                  </h3>
                  <button onClick={() => setShowRejectForm(false)}><X className="w-4 h-4 text-rose-400" /></button>
                </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
   CircleAlert, 
   CircleCheck, 
@@ -44,6 +45,7 @@ const StatCard = ({ label, value, icon, bgClass, trend }: { label: string, value
 
 function IncidentTicketsPage() {
   const { role } = useAuth();
+  const location = useLocation();
   const apiRole = toApiRole(role);
   const isAdmin = role === 'admin';
   const isTechnician = role === 'technician';
@@ -82,6 +84,11 @@ function IncidentTicketsPage() {
 
   useEffect(() => {
     loadTickets();
+    if (location.state && (location.state as any).openCreateModal) {
+      setShowCreateModal(true);
+      // Clear state so it doesn't reopen on refresh
+      window.history.replaceState({}, document.title);
+    }
   }, []);
 
   const filteredTickets = useMemo(() => {
@@ -162,7 +169,7 @@ function IncidentTicketsPage() {
             </div>
           </div>
           
-          {role === 'user' && (
+          {(role === 'user' || role === 'admin') && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="group relative flex items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 text-sm font-black uppercase tracking-widest text-slate-950 shadow-2xl transition-all hover:scale-105 hover:bg-indigo-50 active:scale-95"

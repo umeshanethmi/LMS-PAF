@@ -5,6 +5,9 @@ import com.lms.assessment.model.ticket.MaintenanceTicket;
 import com.lms.assessment.repository.ticket.MaintenanceCommentRepository;
 import com.lms.assessment.repository.ticket.MaintenanceTicketRepository;
 import com.lms.assessment.service.FileStorageService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -109,6 +112,17 @@ public class MaintenanceTicketController {
         response.put("contactDetails", ticket.getContactDetails());
         response.put("status", ticket.getStatus());
         response.put("assignedTechnicianId", ticket.getAssignedTechnicianId());
+        
+        List<Map<String, String>> attachments = new ArrayList<>();
+        if (ticket.getAttachmentPaths() != null) {
+            for (String path : ticket.getAttachmentPaths()) {
+                Map<String, String> att = new java.util.HashMap<>();
+                att.put("imagePath", path);
+                att.put("fileUrl", "http://localhost:8080/api/maintenancetickets/attachments/" + path);
+                attachments.add(att);
+            }
+        }
+        response.put("attachments", attachments);
         response.put("attachmentPaths", ticket.getAttachmentPaths());
         response.put("resolutionNotes", ticket.getResolutionNotes());
         response.put("createdAt", ticket.getCreatedAt());
@@ -202,6 +216,21 @@ public class MaintenanceTicketController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error assigning technician: " + e.getMessage());
+        }
+    @GetMapping("/attachments/{fileName:.+}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
+        try {
+            Resource resource = fileStorageService.loadFileAsResource(fileName);
+            String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 }
