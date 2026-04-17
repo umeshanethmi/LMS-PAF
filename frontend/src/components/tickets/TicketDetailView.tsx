@@ -178,7 +178,7 @@ function TicketDetailView({ ticket, onClose, onUpdated, currentUserId, role }: T
                 {ticket.attachments.map((att, idx) => (
                   <div key={idx} className="group relative aspect-video w-full rounded-2xl overflow-hidden border-2 border-slate-100 shadow-md hover:border-indigo-400 transition-all cursor-zoom-in">
                     <img
-                      src={att.fileUrl || `http://localhost:8084/api/tickets/attachments/${att.id}`}
+                      src={att.fileUrl || `http://localhost:8084/api/tickets/attachments/${att.imagePath}`}
                       alt="Attachment"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {

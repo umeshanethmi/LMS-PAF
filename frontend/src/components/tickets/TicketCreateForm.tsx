@@ -36,7 +36,7 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
     formData.append('currentUserId', currentUserId.toString());
     
     files.forEach((file) => {
-      formData.append('images', file); 
+      formData.append('files', file); 
     });
 
     setLoading(true);
@@ -51,9 +51,10 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
       setContactDetails('');
       setFiles([]);
       onCreated();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create ticket', error);
-      alert('Failed to report incident. Please try again.');
+      const message = error.response?.data?.message || error.message || 'Failed to report incident. Please try again.';
+      alert(`Error: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -139,13 +140,14 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
           <div className="space-y-1.5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
             <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
               <Hash className="h-4 w-4 text-indigo-500" />
-              Resource ID (Optional)
+              Resource ID
             </label>
             <input
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={resourceId}
               onChange={(e) => setResourceId(e.target.value)}
               placeholder="e.g. AC-UNIT-05"
+              required
             />
           </div>
         </div>

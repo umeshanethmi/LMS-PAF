@@ -49,9 +49,7 @@ export async function getTicketById(id: number): Promise<Ticket> {
 }
 
 export async function createTicket(formData: FormData): Promise<Ticket> {
-  const res = await apiClient.post<Ticket>(`/tickets`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const res = await apiClient.post<Ticket>(`/tickets`, formData);
   return res.data;
 }
 

@@ -21,5 +21,7 @@ public interface TicketService {
 
     TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId);
 
+    TicketCommentResponse updateComment(Long ticketId, Long commentId, UpdateCommentRequest request, Long currentUserId);
+
     void deleteComment(Long ticketId, Long commentId, Long currentUserId, TicketActorRole actorRole);
 }

@@ -11,45 +11,28 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.lms.assessment.service.FileStorageService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/tickets")
-@CrossOrigin(origins = "*")
 public class TicketController {
 
     private final TicketService ticketService;
+    private final FileStorageService fileStorageService;
 
-    public TicketController(TicketService ticketService) {
+    public TicketController(TicketService ticketService, FileStorageService fileStorageService) {
         this.ticketService = ticketService;
+        this.fileStorageService = fileStorageService;
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TicketResponse> createTicket(
-            @RequestParam(value = "currentUserId", required = false) Long currentUserId,
-            @RequestParam(value = "resourceId", required = false) String resourceId,
-            @RequestParam(value = "title", required = false) String title,
-            @RequestParam("location") String location,
-            @RequestParam("category") String category,
-            @RequestParam("description") String description,
-            @RequestParam("priority") Priority priority,
-            @RequestParam(value = "contactDetails", required = false) String contactDetails,
-            @RequestParam(value = "preferredContact", required = false) String preferredContact,
-            @RequestParam(value = "attachmentPaths", required = false) List<String> attachmentPaths,
-            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
-
-        CreateTicketRequest request = CreateTicketRequest.builder()
-                .resourceId(resourceId)
-                .title(title)
-                .location(location)
-                .category(category)
-                .description(description)
-                .priority(priority)
-                .contactDetails(contactDetails)
-                .preferredContact(preferredContact)
-                .attachmentPaths(attachmentPaths)
-                .files(files)
-                .build();
+            @Valid @ModelAttribute CreateTicketRequest request) {
 
         return ResponseEntity.ok(ticketService.createTicket(request));
     }
@@ -97,6 +80,16 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.addComment(id, request, currentUserId));
     }
 
+    @PutMapping("/{id}/comments/{commentId}")
+    public ResponseEntity<TicketCommentResponse> updateComment(
+            @PathVariable("id") Long ticketId,
+            @PathVariable("commentId") Long commentId,
+            @RequestParam("currentUserId") @NotNull Long currentUserId,
+            @Valid @RequestBody UpdateCommentRequest request) {
+
+        return ResponseEntity.ok(ticketService.updateComment(ticketId, commentId, request, currentUserId));
+    }
+
     @DeleteMapping("/{id}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(
             @PathVariable("id") Long ticketId,
@@ -106,5 +99,22 @@ public class TicketController {
 
         ticketService.deleteComment(ticketId, commentId, currentUserId, role);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/attachments/{fileName:.+}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
+        try {
+            Resource resource = fileStorageService.loadFileAsResource(fileName);
+            String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 }

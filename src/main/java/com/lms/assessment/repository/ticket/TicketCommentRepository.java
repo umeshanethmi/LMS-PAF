@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface TicketCommentRepository extends JpaRepository<TicketComment, Long> {
-    List<TicketComment> findByTicketIdOrderByCreatedAtAsc(Long ticketId);
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM TicketComment c WHERE c.ticket.id = :ticketId ORDER BY c.createdAt ASC")
+    List<TicketComment> findByTicketIdOrderByCreatedAtAsc(@org.springframework.data.repository.query.Param("ticketId") Long ticketId);
 }

@@ -41,7 +41,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponse createTicket(CreateTicketRequest request) {
-        String resourceId = firstNonBlank(request.getResourceId(), request.getTitle());
+        String resourceId = request.getResourceId();
         if (resourceId == null) {
             throw new SubmissionException("Resource ID is required.");
         }
@@ -63,6 +63,7 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = Ticket.builder()
                 .resourceId(resourceId)
+                .reporterUserId(request.getCurrentUserId())
                 .location(request.getLocation())
                 .category(request.getCategory())
                 .description(request.getDescription())
@@ -83,7 +84,7 @@ public class TicketServiceImpl implements TicketService {
     public List<TicketResponse> getAllTickets() {
         return ticketRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
                 .stream()
-                .map(ticket -> mapToTicketResponse(ticket, true))
+                .map(ticket -> mapToTicketResponse(ticket, false))
                 .collect(Collectors.toList());
     }
 
@@ -135,19 +136,32 @@ public class TicketServiceImpl implements TicketService {
             throw new SubmissionException("New status must be provided.");
         }
 
-        if (!isValidStatusTransition(currentStatus, newStatus)) {
-            throw new SubmissionException("Invalid status transition from " + currentStatus + " to " + newStatus + ".");
-        }
+        // Special check for REJECTED status
+        if (newStatus == TicketStatus.REJECTED) {
+            if (actorRole != TicketActorRole.ADMIN) {
+                throw new ForbiddenOperationException("Only an ADMIN can reject a ticket.");
+            }
+            if (currentStatus != TicketStatus.OPEN) {
+                throw new SubmissionException("Only OPEN tickets can be rejected.");
+            }
+            if (request.getResolutionNotes() == null || request.getResolutionNotes().isBlank()) {
+                throw new SubmissionException("A rejection reason is mandatory.");
+            }
+        } else {
+            // Standard workflow check
+            if (!isValidStatusTransition(currentStatus, newStatus)) {
+                throw new SubmissionException("Invalid status transition from " + currentStatus + " to " + newStatus + ". Workflow must strictly follow: OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED.");
+            }
 
-        String resolutionNotes = request.getResolutionNotes();
-        if ((newStatus == TicketStatus.RESOLVED || newStatus == TicketStatus.CLOSED)
-                && (resolutionNotes == null || resolutionNotes.isBlank())) {
-            throw new SubmissionException("Resolution notes are required when resolving or closing a ticket.");
+            if ((newStatus == TicketStatus.RESOLVED || newStatus == TicketStatus.CLOSED)
+                    && (request.getResolutionNotes() == null || request.getResolutionNotes().isBlank())) {
+                throw new SubmissionException("Resolution notes are required when resolving or closing a ticket.");
+            }
         }
 
         ticket.setStatus(newStatus);
-        if (resolutionNotes != null) {
-            ticket.setResolutionNotes(resolutionNotes);
+        if (request.getResolutionNotes() != null) {
+            ticket.setResolutionNotes(request.getResolutionNotes());
         }
 
         Ticket updated = ticketRepository.save(ticket);
@@ -161,7 +175,7 @@ public class TicketServiceImpl implements TicketService {
 
         TicketComment comment = TicketComment.builder()
                 .ticket(ticket)
-                .userId(currentUserId)
+                .authorUserId(currentUserId)
                 .author("Staff") // Default for now
                 .message(request.getContent())
                 .createdAt(LocalDateTime.now())
@@ -169,6 +183,27 @@ public class TicketServiceImpl implements TicketService {
 
         TicketComment saved = commentRepository.save(comment);
         return mapToCommentResponse(saved);
+    }
+
+    @Override
+    public TicketCommentResponse updateComment(Long ticketId, Long commentId, UpdateCommentRequest request, Long currentUserId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+
+        TicketComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("TicketComment", "id", commentId));
+
+        if (!Objects.equals(comment.getTicket().getId(), ticket.getId())) {
+            throw new SubmissionException("Comment does not belong to the specified ticket.");
+        }
+
+        if (!Objects.equals(comment.getAuthorUserId(), currentUserId)) {
+            throw new ForbiddenOperationException("You are not allowed to edit this comment.");
+        }
+
+        comment.setMessage(request.getContent());
+        TicketComment updated = commentRepository.save(comment);
+        return mapToCommentResponse(updated);
     }
 
     @Override
@@ -183,10 +218,10 @@ public class TicketServiceImpl implements TicketService {
             throw new SubmissionException("Comment does not belong to the specified ticket.");
         }
 
-        boolean isOwner = Objects.equals(comment.getUserId(), currentUserId);
+        boolean isOwner = Objects.equals(comment.getAuthorUserId(), currentUserId);
         boolean isPrivilegedRole = actorRole == TicketActorRole.ADMIN || actorRole == TicketActorRole.TECHNICIAN;
         if (!isOwner && !isPrivilegedRole) {
-            throw new ForbiddenOperationException("You are not allowed to delete this comment.");
+            throw new ForbiddenOperationException("Access Denied: You are not authorized to delete this comment.");
         }
 
         commentRepository.delete(comment);
@@ -202,6 +237,7 @@ public class TicketServiceImpl implements TicketService {
             String storedPath = fileStorageService.storeFile(file, TICKET_UPLOAD_SUBDIR);
             ticket.getAttachments().add(TicketAttachment.builder()
                     .ticket(ticket)
+                    .filePath(storedPath)
                     .imagePath(storedPath)
                     .build());
         }
@@ -215,6 +251,7 @@ public class TicketServiceImpl implements TicketService {
 
             ticket.getAttachments().add(TicketAttachment.builder()
                     .ticket(ticket)
+                    .filePath(attachmentPath.trim())
                     .imagePath(attachmentPath.trim())
                     .build());
         }
@@ -261,17 +298,16 @@ public class TicketServiceImpl implements TicketService {
             return target == TicketStatus.OPEN;
         }
 
-        if (current == TicketStatus.OPEN) {
-            return target == TicketStatus.IN_PROGRESS || target == TicketStatus.RESOLVED
-                    || target == TicketStatus.CLOSED || target == TicketStatus.REJECTED;
+        switch (current) {
+            case OPEN:
+                return target == TicketStatus.IN_PROGRESS;
+            case IN_PROGRESS:
+                return target == TicketStatus.RESOLVED;
+            case RESOLVED:
+                return target == TicketStatus.CLOSED;
+            default:
+                return false;
         }
-        if (current == TicketStatus.IN_PROGRESS) {
-            return target == TicketStatus.RESOLVED || target == TicketStatus.CLOSED || target == TicketStatus.REJECTED;
-        }
-        if (current == TicketStatus.RESOLVED) {
-            return target == TicketStatus.CLOSED;
-        }
-        return false;
     }
 
     private TicketResponse mapToTicketResponse(Ticket ticket, boolean includeChildren) {
@@ -292,7 +328,6 @@ public class TicketServiceImpl implements TicketService {
         return TicketResponse.builder()
                 .id(ticket.getId())
                 .resourceId(ticket.getResourceId())
-                .title(ticket.getResourceId())
                 .location(ticket.getLocation())
                 .category(ticket.getCategory())
                 .description(ticket.getDescription())
@@ -310,10 +345,17 @@ public class TicketServiceImpl implements TicketService {
     }
 
     private TicketAttachmentResponse mapToAttachmentResponse(TicketAttachment attachment) {
+        String fileName = attachment.getImagePath();
+        String fileUrl = fileName;
+        
+        if (fileName != null && !fileName.startsWith("http")) {
+            fileUrl = "http://localhost:8084/api/tickets/attachments/" + fileName;
+        }
+
         return TicketAttachmentResponse.builder()
                 .id(attachment.getId())
-                .imagePath(attachment.getImagePath())
-                .fileUrl(attachment.getImagePath())
+                .imagePath(fileName)
+                .fileUrl(fileUrl)
                 .createdAt(attachment.getCreatedAt())
                 .build();
     }
@@ -322,8 +364,8 @@ public class TicketServiceImpl implements TicketService {
         return TicketCommentResponse.builder()
                 .id(comment.getId())
                 .ticketId(comment.getTicket().getId())
-                .userId(comment.getUserId())
-                .authorUserId(comment.getUserId())
+                .userId(comment.getAuthorUserId())
+                .authorUserId(comment.getAuthorUserId())
                 .content(comment.getMessage())
                 .timestamp(comment.getCreatedAt())
                 .createdAt(comment.getCreatedAt())

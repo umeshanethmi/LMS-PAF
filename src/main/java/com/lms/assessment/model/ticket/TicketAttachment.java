@@ -24,7 +24,10 @@ public class TicketAttachment {
     @EqualsAndHashCode.Exclude
     private Ticket ticket;
 
-    @Column(nullable = false)
+    @Column(name = "file_path", nullable = false)
+    private String filePath;
+
+    @Column(name = "image_path", nullable = false)
     private String imagePath;
 
     @CreationTimestamp

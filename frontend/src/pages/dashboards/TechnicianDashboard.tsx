@@ -18,11 +18,14 @@ const TechnicianDashboard = () => {
       const data = await getAllTickets();
       // Filter for tickets assigned to this technician
       // We assume a naming convention or ID match for demo purposes
-      const filtered = data.filter(t => 
-        t.assignedTechnicianId === user?.id.toString() || 
-        t.assignedTechnicianId === user?.username ||
-        (t.assignedTechnicianId && t.assignedTechnicianId.includes('TECH'))
-      );
+      const filtered = data.filter(t => {
+        if (!user) return true; // Show all in simulation/guest mode
+        return (
+          t.assignedTechnicianId === user.id.toString() || 
+          t.assignedTechnicianId === user.username ||
+          (t.assignedTechnicianId && t.assignedTechnicianId.includes('TECH'))
+        );
+      });
       setTickets(filtered);
       
       if (selectedTicket) {

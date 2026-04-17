@@ -33,7 +33,8 @@ public class TicketComment {
         this.ticket.setId(ticketId);
     }
 
-    private Long userId;
+    @Column(name = "user_id", nullable = false)
+    private Long authorUserId;
     private String author;
     private String message;
     private LocalDateTime createdAt;

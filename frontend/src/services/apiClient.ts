@@ -1,10 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8084/api', // Port 8084 as requested
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: 'http://localhost:8084/api', // Updated to match active backend port 8084
 });
 
 // Add a request interceptor to include the JWT token in requests

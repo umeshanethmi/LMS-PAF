@@ -18,7 +18,6 @@ public class TicketResponse {
 
     private Long id;
     private String resourceId;
-    private String title;
     private String location;
     private String category;
     private String description;

@@ -1,4 +1,4 @@
-// Animation disabled temporarily
+import React from 'react';
 import { Ticket as TicketIcon, TriangleAlert, Clock, CircleCheck } from 'lucide-react';
 
 interface SummaryProps {

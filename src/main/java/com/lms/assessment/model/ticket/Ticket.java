@@ -45,6 +45,9 @@ public class Ticket {
     @Column(nullable = false)
     private TicketStatus status = TicketStatus.OPEN;
 
+    @Column(name = "reporter_user_id", nullable = false)
+    private Long reporterUserId;
+
     private String assignedTechnicianId;
 
     @Column(length = 4000)

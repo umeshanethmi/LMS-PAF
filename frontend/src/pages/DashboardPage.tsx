@@ -6,8 +6,9 @@ import UserDashboard from './dashboards/UserDashboard';
 import TechnicianDashboard from './dashboards/TechnicianDashboard';
 import { ActivityFeed } from "../components/tickets/ActivityFeed";
 
-const DashboardPage = () => {
-  const { role } = useAuth();
+const DashboardPage = ({ overrideRole }: { overrideRole?: 'user' | 'admin' | 'technician' }) => {
+  const { role: authRole } = useAuth();
+  const role = overrideRole || authRole;
 
   const renderDashboard = () => {
     switch (role) {

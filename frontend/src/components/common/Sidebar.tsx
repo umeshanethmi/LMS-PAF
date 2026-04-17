@@ -15,8 +15,9 @@ import {
 
 import { useAuth } from '../../contexts/AuthContext';
 
-function Sidebar() {
-  const { user, role, logout } = useAuth();
+function Sidebar({ overrideRole }: { overrideRole?: 'user' | 'admin' | 'technician' }) {
+  const { user, role: authRole, logout } = useAuth();
+  const role = overrideRole || authRole;
   
   const menuItems = [
     { icon: LayoutGrid, label: 'Dashboard', path: '/' },
@@ -84,7 +85,7 @@ function Sidebar() {
             {user?.username?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-xs font-black truncate text-slate-900">{user?.username || 'Guest System'}</p>
+            <p className="text-xs font-black truncate text-slate-200">{user?.username || 'Guest System'}</p>
             <p className="text-[9px] text-slate-400 truncate uppercase font-black tracking-widest mt-0.5">{role || 'Unassigned'}</p>
           </div>
           <button 
