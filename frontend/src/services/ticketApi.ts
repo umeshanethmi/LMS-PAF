@@ -39,24 +39,24 @@ export interface Ticket {
 }
 
 export async function getAllTickets(): Promise<Ticket[]> {
-  const res = await apiClient.get<Ticket[]>(`/maintenancetickets`);
+  const res = await apiClient.get<Ticket[]>(`/tickets`);
   return res.data;
 }
 
 export async function getTicketById(id: number): Promise<Ticket> {
-  const res = await apiClient.get<Ticket>(`/maintenancetickets/${id}`);
+  const res = await apiClient.get<Ticket>(`/tickets/${id}`);
   return res.data;
 }
 
 export async function createTicket(formData: FormData): Promise<Ticket> {
-  const res = await apiClient.post<Ticket>(`/maintenancetickets`, formData, {
+  const res = await apiClient.post<Ticket>(`/tickets`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res.data;
 }
 
 export async function addTicketComment(ticketId: number, content: string, currentUserId: number) {
-  const res = await apiClient.post(`/maintenancetickets/${ticketId}/comments`, { content }, {
+  const res = await apiClient.post(`/tickets/${ticketId}/comments`, { content }, {
     params: { currentUserId },
   });
   return res.data;
@@ -69,7 +69,7 @@ export async function updateTicketStatus(
   role: TicketRole,
   resolutionNotes?: string
 ) {
-  const res = await apiClient.patch(`/maintenancetickets/${ticketId}/status`, null, {
+  const res = await apiClient.patch(`/tickets/${ticketId}/status`, null, {
     params: { status: newStatus, resolutionNotes }
   });
   return res.data;
@@ -81,7 +81,7 @@ export async function assignTechnician(
   currentUserId: number,
   role: TicketRole
 ) {
-  const res = await apiClient.put(`/maintenancetickets/${ticketId}/assign`, null, {
+  const res = await apiClient.put(`/tickets/${ticketId}/assign`, null, {
     params: { technicianId, currentUserId, role },
   });
   return res.data;

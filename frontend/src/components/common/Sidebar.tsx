@@ -1,146 +1,103 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  LayoutGrid, 
+  LayoutGrid,
   Ticket, 
   Settings, 
-  LogOut, 
   User, 
-  Bell, 
+  Bell,
   ChevronRight,
-  CircleHelp,
-  Activity,
-  Users,
-  Wrench
+  ShieldCheck,
+  Inbox,
+  Briefcase,
+  LogOut
 } from 'lucide-react';
+
 import { useAuth } from '../../contexts/AuthContext';
 
-const Sidebar = () => {
-  const { role, login, logout } = useAuth();
-
-  const getMenuItems = () => {
-    const baseItems = [
-      { icon: LayoutGrid, label: 'Overview', path: '/' },
-    ];
-
-    if (role === 'admin') {
-      baseItems.push(
-        { icon: Activity, label: 'Ticket Console', path: '/tickets' },
-        { icon: Users, label: 'Workforce', path: '/technicians' }
-      );
-    } else if (role === 'technician') {
-      baseItems.push(
-        { icon: Wrench, label: 'My Jobs', path: '/tickets' }
-      );
-    } else {
-      baseItems.push(
-        { icon: Ticket, label: 'Report Incident', path: '/tickets' }
-      );
-    }
-
-    baseItems.push(
-      { icon: Bell, label: 'Notifications', path: '/notifications' },
-      { icon: User, label: 'Personal Hub', path: '/profile' }
-    );
-
-    return baseItems;
-  };
-
-  const menuItems = getMenuItems();
+function Sidebar() {
+  const { user, role, logout } = useAuth();
+  
+  const menuItems = [
+    { icon: LayoutGrid, label: 'Dashboard', path: '/' },
+    { 
+      icon: Inbox, 
+      label: role === 'admin' ? 'Manage Incidents' : role === 'technician' ? 'Assigned Tasks' : 'My Tickets', 
+      path: '/tickets' 
+    },
+    { icon: Bell, label: 'Notifications', path: '/notifications' },
+    { icon: User, label: 'My Profile', path: '/profile' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
+  ];
 
   return (
-    <aside className="w-72 h-screen bg-white border-r border-slate-100 flex flex-col transition-all duration-500 ease-in-out sticky top-0">
+    <div className="w-80 h-screen bg-slate-900 text-white flex flex-col overflow-hidden relative border-r border-white/5 shrink-0 shadow-2xl">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 blur-3xl rounded-full -mr-16 -mt-16"></div>
+      
       {/* Brand Section */}
-      <div className="p-8 flex items-center gap-4">
-        <div className="relative">
-          <div className="w-12 h-12 bg-indigo-600 rounded-[1.25rem] flex items-center justify-center shadow-2xl shadow-indigo-200 group-hover:rotate-12 transition-transform duration-500">
-            <Ticket className="text-white w-7 h-7" />
+      <div className="p-8">
+        <div className="flex items-center gap-3 group cursor-pointer">
+          <div className="h-10 w-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-600/30 transition-transform group-hover:scale-110 group-active:scale-95 duration-300">
+             <ShieldCheck className="w-6 h-6 text-white" />
           </div>
-          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>
-        </div>
-        <div>
-          <h1 className="font-extrabold text-slate-900 text-xl leading-none tracking-tighter">Smart</h1>
-          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Campus Hub</p>
+          <div>
+            <h1 className="text-xl font-black tracking-tighter text-white">CampusHub</h1>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1.5">v2.4.0 • Enterprise</p>
+          </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-6 mt-8 space-y-2 overflow-y-auto custom-scrollbar">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 ml-3 mb-4">Main Menu</p>
+      <div className="flex-1 overflow-y-auto px-4 space-y-1.5 py-6 custom-scrollbar">
         {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            state={item.label === 'Report Incident' ? { openCreateModal: true } : undefined}
+          <NavLink 
+            key={item.path} 
+            to={item.path} 
             className={({ isActive }) => `
-              flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group
+              group relative flex items-center justify-between px-4 py-4 rounded-2xl transition-all duration-300
               ${isActive 
-                ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-900/40' 
+                : 'text-slate-400 hover:text-white hover:bg-white/5'}
             `}
           >
             {({ isActive }) => (
               <>
-                <div className="flex items-center gap-4">
-                  <item.icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
-                  <span className="font-bold text-sm tracking-tight">{item.label}</span>
+                {!isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-indigo-600 rounded-r-full scale-0 group-hover:scale-100 transition-transform origin-left"></div>
+                )}
+                <div className="flex items-center gap-3.5 relative z-10">
+                  <div className={`p-1 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-bold tracking-tight">{item.label}</span>
                 </div>
-                {!isActive && <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />}
+                <ChevronRight className={`w-4 h-4 transition-all duration-300 ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-40 group-hover:translate-x-0'}`} />
               </>
             )}
           </NavLink>
         ))}
-      </nav>
+      </div>
 
-      {/* User Section / Bottom Action */}
-      <div className="p-6 mt-auto">
-        <div className="bg-slate-950 rounded-[2rem] p-6 mb-6 shadow-2xl relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-20 h-20 bg-indigo-500/20 rounded-full blur-2xl group-hover:bg-indigo-500/30 transition-all"></div>
-          <div className="flex items-center gap-3 mb-4 relative z-10">
-            <div className="w-10 h-10 rounded-full border-2 border-white/20 bg-white/10 flex items-center justify-center">
-               <User className="text-white w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs font-black text-white/50 uppercase tracking-widest">{role || 'GUEST'}</p>
-              <h4 className="text-sm font-bold text-white tracking-tight">Active Session</h4>
-            </div>
+      <div className="p-4 border-t border-white/5 m-4 bg-white/5 rounded-3xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-200 border border-white/20">
+            {user?.username?.charAt(0).toUpperCase() || 'U'}
           </div>
-
-          {/* Role Switcher */}
-          <div className="grid grid-cols-3 gap-1 mb-4 relative z-10">
-            {(['user', 'admin', 'technician'] as const).map(r => (
-              <button
-                key={r}
-                onClick={() => login(r)}
-                className={`py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all border ${
-                  role === r 
-                    ? 'bg-indigo-500 border-indigo-400 text-white' 
-                    : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'
-                }`}
-              >
-                {r.slice(0, 4)}
-              </button>
-            ))}
+          <div className="flex-1 overflow-hidden">
+            <p className="text-xs font-black truncate text-slate-900">{user?.username || 'Guest System'}</p>
+            <p className="text-[9px] text-slate-400 truncate uppercase font-black tracking-widest mt-0.5">{role || 'Unassigned'}</p>
           </div>
-
           <button 
             onClick={logout}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-white/10 hover:border-rose-400 group/btn"
+            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+            title="Logout"
           >
-            <LogOut className="w-4 h-4 transition-transform group-hover/btn:rotate-12" />
-            Sign Out
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
-
-        <div className="flex items-center justify-between px-4">
-          <span className="text-[10px] font-bold text-slate-400">v2.0.4-module-c</span>
-          <div className="flex gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-          </div>
-        </div>
       </div>
-    </aside>
+    </div>
   );
-};
+}
 
 export default Sidebar;

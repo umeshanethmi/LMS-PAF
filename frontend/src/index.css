@@ -12,8 +12,8 @@ body,
 }
 
 body {
-  font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
-  background-color: #f8fafc;
+  font-family: 'Plus Jakarta Sans', Inter, Segoe UI, Roboto, Arial, sans-serif;
+  background-color: #f1f5f9; /* Slate-100 as requested */
   color: #0f172a;
 }
 
