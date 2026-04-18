@@ -25,7 +25,10 @@ public class TicketAttachment {
     private Ticket ticket;
 
     @Column(nullable = false)
-    private String imagePath;
+    private String fileName;
+
+    @Column(nullable = false)
+    private String filePath;
 
     @CreationTimestamp
     @Column(updatable = false)

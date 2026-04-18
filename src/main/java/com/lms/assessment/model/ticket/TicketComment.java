@@ -1,19 +1,17 @@
 package com.lms.assessment.model.ticket;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "ticket_comments")
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class TicketComment {
 
     @Id
@@ -21,20 +19,18 @@ public class TicketComment {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ticket_id")
+    @JoinColumn(name = "ticket_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Ticket ticket;
 
-    @Transient
-    @JsonProperty("ticketId")
-    public void setTicketId(Long ticketId) {
-        if (this.ticket == null) {
-            this.ticket = new Ticket();
-        }
-        this.ticket.setId(ticketId);
-    }
+    @Column(nullable = false)
+    private Long authorUserId;
 
-    private Long userId;
-    private String author;
-    private String message;
+    @Column(nullable = false, length = 2000)
+    private String content;
+
+    @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 }

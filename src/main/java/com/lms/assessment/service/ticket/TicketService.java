@@ -1,25 +1,34 @@
 package com.lms.assessment.service.ticket;
 
 import com.lms.assessment.dto.ticket.*;
-import com.lms.assessment.model.ticket.TicketActorRole;
 
 import java.util.List;
 
 public interface TicketService {
 
-    TicketResponse createTicket(CreateTicketRequest request);
+    TicketResponse createTicket(CreateTicketRequest request, Long currentUserId);
 
-    List<TicketResponse> getAllTickets();
+    /**
+     * Normal users see only their own tickets; when canViewAll is true
+     * (for technicians/admins) this returns all tickets.
+     */
+    List<TicketResponse> getMyTickets(Long currentUserId, boolean canViewAll);
 
-    TicketResponse getTicketById(Long ticketId);
+    /**
+     * Fetch a ticket for the current user, enforcing visibility rules
+     * (normal users only see own tickets, technicians/admins can see all).
+     */
+    TicketResponse getTicketByIdForUser(Long ticketId, Long currentUserId, boolean canViewAll);
 
-    TicketResponse assignTechnician(Long ticketId, AssignTechnicianRequest request, Long currentUserId,
-                                    TicketActorRole actorRole);
-
+    /**
+     * Update status according to workflow rules. Only staff/technicians/admins
+     * should be allowed to change status; REJECTED is reserved for them.
+     */
     TicketResponse updateTicketStatus(Long ticketId, UpdateTicketStatusRequest request,
-                                      Long currentUserId, TicketActorRole actorRole);
+                                      Long currentUserId, boolean isStaffOrAdmin);
 
-    TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId);
+    TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId,
+                                     boolean canViewAll);
 
-    void deleteComment(Long ticketId, Long commentId, Long currentUserId, TicketActorRole actorRole);
+    void deleteComment(Long ticketId, Long commentId, Long currentUserId, boolean isStaffOrAdmin);
 }

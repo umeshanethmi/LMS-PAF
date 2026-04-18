@@ -1,8 +1,9 @@
 package com.lms.assessment.service;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.lms.assessment.config.FileStorageProperties;
 import com.lms.assessment.exception.FileStorageException;
 import com.lms.assessment.exception.MyFileNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -22,8 +23,9 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     private final Path fileStorageLocation;
 
-    public FileStorageServiceImpl(@Value("${file.upload-dir}") String uploadDir) {
-        this.fileStorageLocation = Paths.get(uploadDir)
+    @Autowired
+    public FileStorageServiceImpl(FileStorageProperties fileStorageProperties) {
+        this.fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
                 .toAbsolutePath().normalize();
 
         try {
@@ -59,8 +61,6 @@ public class FileStorageServiceImpl implements FileStorageService {
             String targetFileName = UUID.randomUUID().toString() + fileExtension;
             
             Path targetDirectory = this.fileStorageLocation;
-            Files.createDirectories(targetDirectory);
-            
             if (subdirectory != null && !subdirectory.isBlank()) {
                 targetDirectory = targetDirectory.resolve(subdirectory).normalize();
                 Files.createDirectories(targetDirectory);

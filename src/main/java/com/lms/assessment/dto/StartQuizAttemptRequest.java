@@ -1,4 +1,4 @@
-package com.lms.assessment.dto.ticket;
+package com.lms.assessment.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TicketAttachmentResponse {
-
-    private Long id;
-    private String fileName;
-    private String fileUrl;
+public class StartQuizAttemptRequest {
+    private Long quizId;
+    private Long studentId;
 }

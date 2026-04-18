@@ -18,36 +18,29 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateTicketRequest {
 
-    @Size(max = 255, message = "Resource ID must be at most 255 characters")
-    private String resourceId;
-
-    @Size(max = 255, message = "Legacy title must be at most 255 characters")
+    @NotBlank(message = "Title is required")
+    @Size(max = 255, message = "Title must be at most 255 characters")
     private String title;
-
-    @NotBlank(message = "Location is required")
-    @Size(max = 255, message = "Location must be at most 255 characters")
-    private String location;
-
-    @NotBlank(message = "Category is required")
-    @Size(max = 255, message = "Category must be at most 255 characters")
-    private String category;
 
     @NotBlank(message = "Description is required")
     @Size(max = 4000, message = "Description must be at most 4000 characters")
     private String description;
 
+    @NotBlank(message = "Category is required")
+    @Size(max = 255, message = "Category must be at most 255 characters")
+    private String category;
+
     @NotNull(message = "Priority is required")
     private Priority priority;
 
-    @Size(max = 2000, message = "Contact details must be at most 2000 characters")
-    private String contactDetails;
+    @Size(max = 255, message = "Location must be at most 255 characters")
+    private String location;
 
-    @Size(max = 2000, message = "Legacy preferred contact must be at most 2000 characters")
+    private Long facilityId;
+
+    @Size(max = 255, message = "Preferred contact must be at most 255 characters")
     private String preferredContact;
 
-    @Size(max = 3, message = "A ticket can have at most 3 attachments")
-    private List<@Size(max = 1000, message = "Attachment path must be at most 1000 characters") String> attachmentPaths;
-
-    // Optional multipart upload support for client compatibility.
+    // Files will be bound from multipart requests (e.g., name="files")
     private List<MultipartFile> files;
 }

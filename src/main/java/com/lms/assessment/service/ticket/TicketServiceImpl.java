@@ -1,23 +1,18 @@
 package com.lms.assessment.service.ticket;
 
 import com.lms.assessment.dto.ticket.*;
-import com.lms.assessment.exception.ForbiddenOperationException;
 import com.lms.assessment.exception.ResourceNotFoundException;
 import com.lms.assessment.exception.SubmissionException;
 import com.lms.assessment.model.ticket.*;
+import com.lms.assessment.repository.ticket.TicketAttachmentRepository;
 import com.lms.assessment.repository.ticket.TicketCommentRepository;
 import com.lms.assessment.repository.ticket.TicketRepository;
 import com.lms.assessment.service.FileStorageService;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,51 +23,54 @@ public class TicketServiceImpl implements TicketService {
     private static final int MAX_ATTACHMENTS_PER_TICKET = 3;
 
     private final TicketRepository ticketRepository;
+    private final TicketAttachmentRepository attachmentRepository;
     private final TicketCommentRepository commentRepository;
     private final FileStorageService fileStorageService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
+                             TicketAttachmentRepository attachmentRepository,
                              TicketCommentRepository commentRepository,
                              FileStorageService fileStorageService) {
         this.ticketRepository = ticketRepository;
+        this.attachmentRepository = attachmentRepository;
         this.commentRepository = commentRepository;
         this.fileStorageService = fileStorageService;
     }
 
     @Override
-    public TicketResponse createTicket(CreateTicketRequest request) {
-        String resourceId = firstNonBlank(request.getResourceId(), request.getTitle());
-        if (resourceId == null) {
-            throw new SubmissionException("Resource ID is required.");
-        }
-
-        String contactDetails = firstNonBlank(request.getContactDetails(), request.getPreferredContact());
-        if (contactDetails == null) {
-            throw new SubmissionException("Contact details are required.");
-        }
-
-        List<MultipartFile> files = request.getFiles() == null ? Collections.emptyList() : request.getFiles();
-        List<String> attachmentPaths = request.getAttachmentPaths() == null
-                ? Collections.emptyList()
-                : request.getAttachmentPaths();
-
-        int totalAttachments = countProvidedAttachments(files, attachmentPaths);
-        if (totalAttachments > MAX_ATTACHMENTS_PER_TICKET) {
+    public TicketResponse createTicket(CreateTicketRequest request, Long currentUserId) {
+        List<MultipartFile> files = request.getFiles();
+        if (files != null && files.size() > MAX_ATTACHMENTS_PER_TICKET) {
             throw new SubmissionException("A maximum of " + MAX_ATTACHMENTS_PER_TICKET + " attachments is allowed per ticket.");
         }
 
         Ticket ticket = Ticket.builder()
-                .resourceId(resourceId)
-                .location(request.getLocation())
-                .category(request.getCategory())
+                .title(request.getTitle())
                 .description(request.getDescription())
+                .category(request.getCategory())
                 .priority(request.getPriority())
-                .contactDetails(contactDetails)
                 .status(TicketStatus.OPEN)
+                .location(request.getLocation())
+                .facilityId(request.getFacilityId())
+                .preferredContact(request.getPreferredContact())
+                .reporterUserId(currentUserId)
                 .build();
 
-        addUploadedAttachments(ticket, files);
-        addPathAttachments(ticket, attachmentPaths);
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                if (file == null || file.isEmpty()) {
+                    continue;
+                }
+                validateImageFile(file);
+                String storedPath = fileStorageService.storeFile(file, TICKET_UPLOAD_SUBDIR);
+                TicketAttachment attachment = TicketAttachment.builder()
+                        .ticket(ticket)
+                        .fileName(file.getOriginalFilename())
+                        .filePath(storedPath)
+                        .build();
+                ticket.getAttachments().add(attachment);
+            }
+        }
 
         Ticket saved = ticketRepository.save(ticket);
         return mapToTicketResponse(saved, true);
@@ -80,52 +78,40 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TicketResponse> getAllTickets() {
-        return ticketRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
-                .stream()
+    public List<TicketResponse> getMyTickets(Long currentUserId, boolean canViewAll) {
+        List<Ticket> tickets;
+        if (canViewAll) {
+            tickets = ticketRepository.findAll();
+        } else {
+            tickets = ticketRepository.findByReporterUserId(currentUserId);
+        }
+
+        return tickets.stream()
                 .map(ticket -> mapToTicketResponse(ticket, true))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public TicketResponse getTicketById(Long ticketId) {
+    public TicketResponse getTicketByIdForUser(Long ticketId, Long currentUserId, boolean canViewAll) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+
+        if (!canViewAll && !Objects.equals(ticket.getReporterUserId(), currentUserId)) {
+            throw new SubmissionException("You are not allowed to view this ticket.");
+        }
+
         return mapToTicketResponse(ticket, true);
     }
 
     @Override
-    public TicketResponse assignTechnician(Long ticketId, AssignTechnicianRequest request, Long currentUserId,
-                                           TicketActorRole actorRole) {
-        requireRole(actorRole, TicketActorRole.ADMIN, "Only administrators can assign technicians.");
-
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
-
-        if (ticket.getStatus() == TicketStatus.CLOSED || ticket.getStatus() == TicketStatus.REJECTED) {
-            throw new SubmissionException("Closed or rejected tickets cannot be reassigned.");
-        }
-
-        ticket.setAssignedTechnicianId(request.getTechnicianId());
-        Ticket updated = ticketRepository.save(ticket);
-        return mapToTicketResponse(updated, true);
-    }
-
-    @Override
     public TicketResponse updateTicketStatus(Long ticketId, UpdateTicketStatusRequest request,
-                                             Long currentUserId, TicketActorRole actorRole) {
-        requireRole(actorRole, TicketActorRole.TECHNICIAN, "Only technicians can update ticket status.");
-
+                                             Long currentUserId, boolean isStaffOrAdmin) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
-        if (ticket.getAssignedTechnicianId() == null) {
-            throw new SubmissionException("Ticket must be assigned to a technician before its status can be updated.");
-        }
-
-        if (!Objects.equals(ticket.getAssignedTechnicianId(), String.valueOf(currentUserId))) {
-            throw new ForbiddenOperationException("Only the assigned technician can update this ticket.");
+        if (!isStaffOrAdmin) {
+            throw new SubmissionException("Only staff/technicians/admins can update ticket status.");
         }
 
         TicketStatus currentStatus = ticket.getStatus();
@@ -135,19 +121,21 @@ public class TicketServiceImpl implements TicketService {
             throw new SubmissionException("New status must be provided.");
         }
 
-        if (!isValidStatusTransition(currentStatus, newStatus)) {
+        if (currentStatus == newStatus) {
+            // no-op, but still allow updating technician or resolution notes
+        } else if (!isValidStatusTransition(currentStatus, newStatus)) {
             throw new SubmissionException("Invalid status transition from " + currentStatus + " to " + newStatus + ".");
         }
 
-        String resolutionNotes = request.getResolutionNotes();
-        if ((newStatus == TicketStatus.RESOLVED || newStatus == TicketStatus.CLOSED)
-                && (resolutionNotes == null || resolutionNotes.isBlank())) {
-            throw new SubmissionException("Resolution notes are required when resolving or closing a ticket.");
+        // REJECTED is only for staff/admin, but method already gated by isStaffOrAdmin
+        ticket.setStatus(newStatus);
+
+        if (request.getTechnicianUserId() != null) {
+            ticket.setTechnicianUserId(request.getTechnicianUserId());
         }
 
-        ticket.setStatus(newStatus);
-        if (resolutionNotes != null) {
-            ticket.setResolutionNotes(resolutionNotes);
+        if (request.getResolutionNotes() != null) {
+            ticket.setResolutionNotes(request.getResolutionNotes());
         }
 
         Ticket updated = ticketRepository.save(ticket);
@@ -155,16 +143,19 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    public TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId) {
+    public TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId,
+                                            boolean canViewAll) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
+        if (!canViewAll && !Objects.equals(ticket.getReporterUserId(), currentUserId)) {
+            throw new SubmissionException("You are not allowed to comment on this ticket.");
+        }
+
         TicketComment comment = TicketComment.builder()
                 .ticket(ticket)
-                .userId(currentUserId)
-                .author("Staff") // Default for now
-                .message(request.getContent())
-                .createdAt(LocalDateTime.now())
+                .authorUserId(currentUserId)
+                .content(request.getContent())
                 .build();
 
         TicketComment saved = commentRepository.save(comment);
@@ -172,7 +163,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    public void deleteComment(Long ticketId, Long commentId, Long currentUserId, TicketActorRole actorRole) {
+    public void deleteComment(Long ticketId, Long commentId, Long currentUserId, boolean isStaffOrAdmin) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
@@ -183,76 +174,28 @@ public class TicketServiceImpl implements TicketService {
             throw new SubmissionException("Comment does not belong to the specified ticket.");
         }
 
-        boolean isOwner = Objects.equals(comment.getUserId(), currentUserId);
-        boolean isPrivilegedRole = actorRole == TicketActorRole.ADMIN || actorRole == TicketActorRole.TECHNICIAN;
-        if (!isOwner && !isPrivilegedRole) {
-            throw new ForbiddenOperationException("You are not allowed to delete this comment.");
+        boolean isOwner = Objects.equals(comment.getAuthorUserId(), currentUserId);
+        if (!isOwner && !isStaffOrAdmin) {
+            throw new SubmissionException("You are not allowed to delete this comment.");
         }
 
         commentRepository.delete(comment);
     }
 
-    private void addUploadedAttachments(Ticket ticket, List<MultipartFile> files) {
-        for (MultipartFile file : files) {
-            if (file == null || file.isEmpty()) {
-                continue;
-            }
-
-            validateImageFile(file);
-            String storedPath = fileStorageService.storeFile(file, TICKET_UPLOAD_SUBDIR);
-            ticket.getAttachments().add(TicketAttachment.builder()
-                    .ticket(ticket)
-                    .imagePath(storedPath)
-                    .build());
-        }
-    }
-
-    private void addPathAttachments(Ticket ticket, List<String> attachmentPaths) {
-        for (String attachmentPath : attachmentPaths) {
-            if (attachmentPath == null || attachmentPath.isBlank()) {
-                continue;
-            }
-
-            ticket.getAttachments().add(TicketAttachment.builder()
-                    .ticket(ticket)
-                    .imagePath(attachmentPath.trim())
-                    .build());
-        }
-    }
-
-    private int countProvidedAttachments(List<MultipartFile> files, List<String> attachmentPaths) {
-        int fileCount = 0;
-        for (MultipartFile file : files) {
-            if (file != null && !file.isEmpty()) {
-                fileCount++;
-            }
-        }
-
-        int pathCount = 0;
-        for (String attachmentPath : attachmentPaths) {
-            if (attachmentPath != null && !attachmentPath.isBlank()) {
-                pathCount++;
-            }
-        }
-
-        return fileCount + pathCount;
-    }
-
     private void validateImageFile(MultipartFile file) {
         String contentType = file.getContentType();
-        if (contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+        if (contentType != null && contentType.toLowerCase().startsWith("image/")) {
             return;
         }
 
         String originalName = file.getOriginalFilename();
         if (originalName == null) {
-            throw new SubmissionException("Only image files are allowed.");
+            throw new SubmissionException("Only image files (png, jpg, jpeg) are allowed.");
         }
 
         String lowerName = originalName.toLowerCase(Locale.ROOT);
-        if (!(lowerName.endsWith(".png") || lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")
-                || lowerName.endsWith(".webp") || lowerName.endsWith(".gif"))) {
-            throw new SubmissionException("Only image files are allowed.");
+        if (!(lowerName.endsWith(".png") || lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg"))) {
+            throw new SubmissionException("Only image files (png, jpg, jpeg) are allowed.");
         }
     }
 
@@ -269,7 +212,11 @@ public class TicketServiceImpl implements TicketService {
             return target == TicketStatus.RESOLVED || target == TicketStatus.CLOSED || target == TicketStatus.REJECTED;
         }
         if (current == TicketStatus.RESOLVED) {
-            return target == TicketStatus.CLOSED;
+            return target == TicketStatus.CLOSED || target == TicketStatus.REJECTED;
+        }
+        if (current == TicketStatus.CLOSED || current == TicketStatus.REJECTED) {
+            // terminal statuses
+            return false;
         }
         return false;
     }
@@ -291,16 +238,16 @@ public class TicketServiceImpl implements TicketService {
 
         return TicketResponse.builder()
                 .id(ticket.getId())
-                .resourceId(ticket.getResourceId())
-                .title(ticket.getResourceId())
-                .location(ticket.getLocation())
-                .category(ticket.getCategory())
+                .title(ticket.getTitle())
                 .description(ticket.getDescription())
+                .category(ticket.getCategory())
                 .priority(ticket.getPriority())
                 .status(ticket.getStatus())
-                .contactDetails(ticket.getContactDetails())
-                .preferredContact(ticket.getContactDetails())
-                .assignedTechnicianId(ticket.getAssignedTechnicianId())
+                .location(ticket.getLocation())
+                .facilityId(ticket.getFacilityId())
+                .preferredContact(ticket.getPreferredContact())
+                .reporterUserId(ticket.getReporterUserId())
+                .technicianUserId(ticket.getTechnicianUserId())
                 .resolutionNotes(ticket.getResolutionNotes())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
@@ -312,39 +259,18 @@ public class TicketServiceImpl implements TicketService {
     private TicketAttachmentResponse mapToAttachmentResponse(TicketAttachment attachment) {
         return TicketAttachmentResponse.builder()
                 .id(attachment.getId())
-                .imagePath(attachment.getImagePath())
-                .fileUrl(attachment.getImagePath())
-                .createdAt(attachment.getCreatedAt())
+                .fileName(attachment.getFileName())
+                // Expose stored path for now; controller can turn this into a full URL
+                .fileUrl(attachment.getFilePath())
                 .build();
     }
 
     private TicketCommentResponse mapToCommentResponse(TicketComment comment) {
         return TicketCommentResponse.builder()
                 .id(comment.getId())
-                .ticketId(comment.getTicket().getId())
-                .userId(comment.getUserId())
-                .authorUserId(comment.getUserId())
-                .content(comment.getMessage())
-                .timestamp(comment.getCreatedAt())
+                .authorUserId(comment.getAuthorUserId())
+                .content(comment.getContent())
                 .createdAt(comment.getCreatedAt())
                 .build();
-    }
-
-    private void requireRole(TicketActorRole actorRole, TicketActorRole requiredRole, String message) {
-        if (actorRole != requiredRole) {
-            throw new ForbiddenOperationException(message);
-        }
-    }
-
-    private String firstNonBlank(String first, String second) {
-        if (first != null && !first.isBlank()) {
-            return first.trim();
-        }
-
-        if (second != null && !second.isBlank()) {
-            return second.trim();
-        }
-
-        return null;
     }
 }

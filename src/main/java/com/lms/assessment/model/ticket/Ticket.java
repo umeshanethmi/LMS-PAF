@@ -1,5 +1,7 @@
 package com.lms.assessment.model.ticket;
 
+import com.lms.assessment.model.ticket.Priority;
+import com.lms.assessment.model.ticket.TicketStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -22,30 +24,32 @@ public class Ticket {
     private Long id;
 
     @Column(nullable = false)
-    private String resourceId;
+    private String title;
 
-    @Column(nullable = false)
-    private String location;
+    @Column(length = 4000)
+    private String description;
 
     @Column(nullable = false)
     private String category;
-
-    @Column(length = 4000, nullable = false)
-    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Priority priority;
 
-    @Column(length = 2000, nullable = false)
-    private String contactDetails;
-
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TicketStatus status = TicketStatus.OPEN;
+    private TicketStatus status;
 
-    private String assignedTechnicianId;
+    private String location;
+
+    private Long facilityId;
+
+    private String preferredContact;
+
+    @Column(nullable = false)
+    private Long reporterUserId;
+
+    private Long technicianUserId;
 
     @Column(length = 4000)
     private String resolutionNotes;
