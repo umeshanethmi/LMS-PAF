@@ -1,7 +1,6 @@
-import { createContext, useState, useContext } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useState, useContext, ReactNode } from 'react';
 
-type UserRole = 'user' | 'admin' | 'technician' | null;
+type UserRole = 'student' | 'instructor' | null;
 
 interface AuthContextType {
   role: UserRole;
