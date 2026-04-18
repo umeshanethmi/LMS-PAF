@@ -3,6 +3,11 @@ package com.lms.assessment.model;
 import com.lms.assessment.model.enums.ResourceStatus;
 import com.lms.assessment.model.enums.ResourceType;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -22,32 +27,45 @@ public class Resource {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 120)
+    @Column(nullable = false, length = 120)
     private String name;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 32)
     private ResourceType type;
 
+    @Min(1)
+    @Max(10_000)
     private Integer capacity;
 
-    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 200)
+    @Column(nullable = false, length = 200)
     private String location;
 
+    @Size(max = 2000)
     @Column(length = 2000)
     private String description;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 32)
     private ResourceStatus status;
 
     private LocalTime availabilityStart;
 
     private LocalTime availabilityEnd;
 
-    // Comma-separated days e.g. "MON,TUE,WED,THU,FRI"
+    // Either "MON,TUE,WED" or "MON:08:00-17:00,TUE:08:00-17:00"
+    @Size(max = 500)
+    @Column(length = 500)
     private String availableDays;
 
+    @Size(max = 500)
+    @Column(length = 500)
     private String imageUrl;
 
     @CreationTimestamp
