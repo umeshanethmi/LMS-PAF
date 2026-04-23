@@ -24,13 +24,20 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/role")
-    public ResponseEntity<User> updateRole(@PathVariable Long id, @RequestParam User.Role role) {
+    public ResponseEntity<User> updateRole(@PathVariable String id, @RequestParam User.Role role) {
         return ResponseEntity.ok(userService.updateUserRole(id, role));
+    }
+
+    @GetMapping("/technicians")
+    public ResponseEntity<List<User>> getTechnicians() {
+        return ResponseEntity.ok(userService.getAllUsers().stream()
+                .filter(u -> u.getRole() == User.Role.TECHNICIAN)
+                .toList());
     }
 }

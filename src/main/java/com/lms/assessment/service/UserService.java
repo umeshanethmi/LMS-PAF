@@ -59,11 +59,11 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public void deleteUser(Long id) {
+    public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
     
-    public User updateUserRole(Long id, User.Role role) {
+    public User updateUserRole(String id, User.Role role) {
         User user = userRepository.findById(id).orElseThrow();
         user.setRole(role);
         return userRepository.save(user);

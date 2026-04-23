@@ -15,18 +15,8 @@ const TechnicianDashboard = () => {
   const loadTickets = async () => {
     try {
       setLoading(true);
-      const data = await getAllTickets();
-      // Filter for tickets assigned to this technician
-      // We assume a naming convention or ID match for demo purposes
-      const filtered = data.filter(t => {
-        if (!user) return true; // Show all in simulation/guest mode
-        return (
-          t.assignedTechnicianId === user.id.toString() || 
-          t.assignedTechnicianId === user.username ||
-          (t.assignedTechnicianId && t.assignedTechnicianId.includes('TECH'))
-        );
-      });
-      setTickets(filtered);
+      const data = await getAllTickets(user?.id || '0', 'TECHNICIAN');
+      setTickets(Array.isArray(data) ? data : []);
       
       if (selectedTicket) {
         const updated = await getTicketById(selectedTicket.id);
@@ -108,7 +98,7 @@ const TechnicianDashboard = () => {
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
           onUpdated={loadTickets}
-          currentUserId={user?.id || 0}
+          currentUserId={user?.id || '0'}
           role="TECHNICIAN"
         />
       )}

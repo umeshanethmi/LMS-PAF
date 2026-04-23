@@ -16,8 +16,8 @@ const AdminDashboard = () => {
   const loadTickets = async () => {
     try {
       setLoading(true);
-      const data = await getAllTickets();
-      setTickets(data);
+      const data = await getAllTickets(user?.id, 'ADMIN');
+      setTickets(Array.isArray(data) ? data : []);
       if (selectedTicket) {
         const updated = await getTicketById(selectedTicket.id);
         setSelectedTicket(updated);
@@ -78,6 +78,7 @@ const AdminDashboard = () => {
           <TicketList 
             tickets={tickets} 
             onSelectTicket={setSelectedTicket}
+            onAssignTechnician={setSelectedTicket}
             role="ADMIN"
           />
         )}
@@ -88,7 +89,7 @@ const AdminDashboard = () => {
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
           onUpdated={loadTickets}
-          currentUserId={user?.id || 0}
+          currentUserId={user?.id || '0'}
           role="ADMIN"
         />
       )}

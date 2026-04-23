@@ -17,8 +17,8 @@ const UserDashboard = () => {
   const loadTickets = async () => {
     try {
       setLoading(true);
-      const data = await getAllTickets();
-      setTickets(data);
+      const data = await getAllTickets(user?.id || '0', 'USER');
+      setTickets(Array.isArray(data) ? data : []);
       if (selectedTicket) {
         const updated = await getTicketById(selectedTicket.id);
         setSelectedTicket(updated);
@@ -45,8 +45,8 @@ const UserDashboard = () => {
       <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">My Incident Hub</h1>
-            <p className="text-slate-500 font-medium mt-1">Efficiently track and manage your campus maintenance requests.</p>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Student Incident Hub</h1>
+            <p className="text-slate-500 font-medium mt-1">Easily report and track your campus maintenance requests.</p>
           </div>
           <button 
             onClick={() => setShowCreateForm(true)}
@@ -86,7 +86,7 @@ const UserDashboard = () => {
             <div className="p-2 bg-indigo-50 rounded-xl">
               <TicketIcon className="w-5 h-5 text-indigo-600" />
             </div>
-            <h2 className="text-xl font-bold text-slate-800">My Maintenance Tickets</h2>
+            <h2 className="text-xl font-bold text-slate-800">Student Maintenance Tickets</h2>
           </div>
           
           <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden">
@@ -109,7 +109,7 @@ const UserDashboard = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] bg-white shadow-2xl p-2 custom-scrollbar">
              <TicketCreateForm 
-               currentUserId={user?.id || 0}
+               currentUserId={user?.id || '0'}
                onCreated={() => {
                  loadTickets();
                  setShowCreateForm(false);
@@ -130,7 +130,7 @@ const UserDashboard = () => {
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
           onUpdated={loadTickets}
-          currentUserId={user?.id || 0}
+          currentUserId={user?.id || '0'}
           role="USER"
         />
       )}

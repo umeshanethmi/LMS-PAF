@@ -5,12 +5,12 @@ import FileUpload from '../common/FileUpload';
 import { Clock, CirclePlus, PenLine, Settings, MapPin, Hash, Phone } from 'lucide-react';
 
 interface TicketCreateFormProps {
-  currentUserId: number;
+  currentUserId: string;
   onCreated: () => void;
 }
 
 function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
-  const [resourceId, setResourceId] = useState('');
+  const [email, setEmail] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
@@ -18,6 +18,17 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
   const [contactDetails, setContactDetails] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const categories = [
+    'Electrical',
+    'Plumbing',
+    'IT / Network',
+    'HVAC / Cooling',
+    'Cleaning',
+    'Furniture',
+    'Security',
+    'Other'
+  ];
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,7 +38,7 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
     }
 
     const formData = new FormData();
-    formData.append('resourceId', resourceId);
+    formData.append('email', email);
     formData.append('description', description);
     formData.append('category', category);
     formData.append('priority', priority);
@@ -43,7 +54,7 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
     try {
       await createTicket(formData);
       alert('Incident ticket reported successfully!');
-      setResourceId('');
+      setEmail('');
       setDescription('');
       setCategory('');
       setPriority('MEDIUM');
@@ -81,13 +92,17 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
               <Settings className="h-4 w-4 text-indigo-500" />
               Category
             </label>
-            <input
+            <select
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. Electrical, Plumbing"
               required
-            />
+            >
+              <option value="" disabled>Select Category</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-1.5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
             <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
@@ -140,13 +155,14 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
           <div className="space-y-1.5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
             <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
               <Hash className="h-4 w-4 text-indigo-500" />
-              Resource ID
+              Email Address
             </label>
             <input
+              type="email"
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              value={resourceId}
-              onChange={(e) => setResourceId(e.target.value)}
-              placeholder="e.g. AC-UNIT-05"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="yourname@example.com"
               required
             />
           </div>

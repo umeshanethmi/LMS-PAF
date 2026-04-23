@@ -1,6 +1,5 @@
 package com.lms.assessment.controller.user;
 
-import com.lms.assessment.dto.user.AuthResponse;
 import com.lms.assessment.dto.user.LoginRequest;
 import com.lms.assessment.service.UserService;
 import org.springframework.http.ResponseEntity;

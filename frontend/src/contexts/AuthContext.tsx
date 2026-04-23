@@ -2,10 +2,10 @@ import { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import apiClient from '../services/apiClient';
 
-type UserRole = 'user' | 'admin' | 'technician' | null;
+type UserRole = 'USER' | 'ADMIN' | 'TECHNICIAN' | null;
 
 interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
   role: UserRole;
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update role format to lowercase for frontend consistency
       const formattedUser = {
         ...userData,
-        role: userData.role?.toLowerCase() as UserRole
+        role: userData.role?.toUpperCase() as UserRole
       };
       
       setUser(formattedUser);

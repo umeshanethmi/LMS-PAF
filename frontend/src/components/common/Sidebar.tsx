@@ -15,17 +15,23 @@ import {
 
 import { useAuth } from '../../contexts/AuthContext';
 
-function Sidebar({ overrideRole }: { overrideRole?: 'user' | 'admin' | 'technician' }) {
-  const { user, role: authRole, logout } = useAuth();
-  const role = overrideRole || authRole;
+function Sidebar() {
+  const { user, role, logout } = useAuth();
   
   const menuItems = [
     { icon: LayoutGrid, label: 'Dashboard', path: '/' },
     { 
       icon: Inbox, 
-      label: role === 'admin' ? 'Manage Incidents' : role === 'technician' ? 'Assigned Tasks' : 'My Tickets', 
+      label: role === 'ADMIN' ? 'Manage Incidents' : role === 'TECHNICIAN' ? 'Assigned Tasks' : 'Student Tickets', 
       path: '/tickets' 
     },
+    ...(role === 'ADMIN' ? [
+      { icon: User, label: 'User Management', path: '/users' },
+      { icon: Briefcase, label: 'Admin View', path: '/admin' }
+    ] : []),
+    ...(role === 'TECHNICIAN' ? [
+      { icon: Briefcase, label: 'Tech Hub', path: '/tech' }
+    ] : []),
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'My Profile', path: '/profile' },
     { icon: Settings, label: 'Settings', path: '/settings' },

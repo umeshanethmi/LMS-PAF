@@ -1,15 +1,12 @@
 package com.lms.assessment.model.ticket;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import org.springframework.data.annotation.Id;
 import java.time.LocalDateTime;
 
-@Entity
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,25 +14,17 @@ import java.time.LocalDateTime;
 public class TicketComment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ticket_id")
-    private Ticket ticket;
+    private String ticketId;
 
-    @Transient
-    @JsonProperty("ticketId")
-    public void setTicketId(Long ticketId) {
-        if (this.ticket == null) {
-            this.ticket = new Ticket();
-        }
-        this.ticket.setId(ticketId);
-    }
+    private String authorUserId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long authorUserId;
     private String author;
+
+    private TicketActorRole authorRole;
+
     private String message;
+
     private LocalDateTime createdAt;
 }

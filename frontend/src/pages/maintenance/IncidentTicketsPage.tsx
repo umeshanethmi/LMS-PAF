@@ -47,8 +47,8 @@ function IncidentTicketsPage() {
   const { role } = useAuth();
   const location = useLocation();
   const apiRole = toApiRole(role);
-  const isAdmin = role === 'admin';
-  const isTechnician = role === 'technician';
+  const isAdmin = role === 'ADMIN';
+  const isTechnician = role === 'TECHNICIAN';
   
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -60,13 +60,13 @@ function IncidentTicketsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const currentUserId = role === 'admin' ? 999 : role === 'technician' ? 888 : 1; // Role-based IDs for testing
+  const currentUserId = role === 'ADMIN' ? '999' : role === 'TECHNICIAN' ? '888' : '1'; // Role-based IDs for testing
 
   const loadTickets = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAllTickets();
+      const data = await getAllTickets(currentUserId, apiRole);
       setTickets(Array.isArray(data) ? data : []);
       
       // If a ticket was selected, refresh it
@@ -95,7 +95,7 @@ function IncidentTicketsPage() {
     let result = [...tickets];
     
     // Role-based filtering
-    if (role === 'technician') {
+    if (role === 'TECHNICIAN') {
        // Filter for tickets assigned to this technician
        // For demo/testing: Technicians see tickets assigned to '1' or their specific Tech ID
        result = result.filter(t => 
@@ -103,7 +103,7 @@ function IncidentTicketsPage() {
          t.assignedTechnicianId === 'TECH-' + currentUserId ||
          (t.assignedTechnicianId && t.assignedTechnicianId.startsWith('TECH'))
        );
-    } else if (role === 'user') {
+    } else if (role === 'USER') {
        // Assuming userId is tracked. If not in model yet, we show all for now or filter if available
        // result = result.filter(t => t.reportedBy === currentUserId);
     }
@@ -111,7 +111,7 @@ function IncidentTicketsPage() {
     if (searchTerm) {
       result = result.filter(t => 
         t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (t.resourceId && t.resourceId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (t.email && t.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         t.category.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -169,7 +169,7 @@ function IncidentTicketsPage() {
             </div>
           </div>
           
-          {(role === 'user' || role === 'admin') && (
+          {(role === 'USER' || role === 'ADMIN') && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="group relative flex items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 text-sm font-black uppercase tracking-widest text-slate-950 shadow-2xl transition-all hover:scale-105 hover:bg-indigo-50 active:scale-95"

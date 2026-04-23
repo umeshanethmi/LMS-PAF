@@ -9,19 +9,21 @@ public interface TicketService {
 
     TicketResponse createTicket(CreateTicketRequest request);
 
-    List<TicketResponse> getAllTickets();
+    List<TicketResponse> getAllTickets(String currentUserId, TicketActorRole actorRole);
 
-    TicketResponse getTicketById(Long ticketId);
+    TicketResponse getTicketById(String ticketId);
 
-    TicketResponse assignTechnician(Long ticketId, AssignTechnicianRequest request, Long currentUserId,
+    TicketResponse assignTechnician(String ticketId, AssignTechnicianRequest request, String currentUserId,
                                     TicketActorRole actorRole);
 
-    TicketResponse updateTicketStatus(Long ticketId, UpdateTicketStatusRequest request,
-                                      Long currentUserId, TicketActorRole actorRole);
+    TicketResponse updateTicketStatus(String ticketId, UpdateTicketStatusRequest request,
+                                      String currentUserId, TicketActorRole actorRole);
 
-    TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId);
+    TicketCommentResponse addComment(String ticketId, CreateCommentRequest request, String currentUserId, TicketActorRole role);
 
-    TicketCommentResponse updateComment(Long ticketId, Long commentId, UpdateCommentRequest request, Long currentUserId);
+    TicketCommentResponse updateComment(String ticketId, String commentId, UpdateCommentRequest request, String currentUserId);
 
-    void deleteComment(Long ticketId, Long commentId, Long currentUserId, TicketActorRole actorRole);
+    void deleteComment(String ticketId, String commentId, String currentUserId, TicketActorRole actorRole);
+
+    TicketResponse startWork(String ticketId, String techId);
 }

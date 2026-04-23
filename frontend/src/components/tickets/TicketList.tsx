@@ -11,6 +11,14 @@ interface TicketListProps {
 
 function getStatusStyles(status: Ticket['status']) {
   switch (status) {
+    case 'ASSIGNED':
+      return {
+        bg: 'bg-indigo-100/50',
+        text: 'text-indigo-700',
+        border: 'border-indigo-200/50',
+        dot: 'bg-indigo-500',
+        icon: <Clock className="w-3.5 h-3.5" />
+      };
     case 'RESOLVED':
       return {
         bg: 'bg-emerald-100/50',
@@ -97,7 +105,7 @@ function TicketList({ tickets, onSelectTicket, onAssignTechnician, role }: Ticke
                   <td className="px-8 py-6">
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                         <span className="font-bold text-slate-900 tracking-tight">{t.resourceId || 'General Issue'}</span>
+                         <span className="font-bold text-slate-900 tracking-tight">{t.email || 'General Issue'}</span>
                          <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-lg font-black text-slate-400">#{t.id}</span>
                       </div>
                       <span className="mt-1 text-xs font-semibold text-slate-400 flex items-center gap-1.5">

@@ -5,9 +5,12 @@ import com.lms.assessment.exception.ForbiddenOperationException;
 import com.lms.assessment.exception.ResourceNotFoundException;
 import com.lms.assessment.exception.SubmissionException;
 import com.lms.assessment.model.ticket.*;
-import com.lms.assessment.repository.ticket.TicketCommentRepository;
+import com.lms.assessment.model.user.User;
+import com.lms.assessment.repository.user.UserRepository;
+import com.lms.assessment.repository.ticket.TicketAttachmentRepository;
 import com.lms.assessment.repository.ticket.TicketRepository;
 import com.lms.assessment.service.FileStorageService;
+import com.lms.assessment.service.email.EmailService;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,22 +31,28 @@ public class TicketServiceImpl implements TicketService {
     private static final int MAX_ATTACHMENTS_PER_TICKET = 3;
 
     private final TicketRepository ticketRepository;
-    private final TicketCommentRepository commentRepository;
+    private final TicketAttachmentRepository attachmentRepository;
+    private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final EmailService emailService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
-                             TicketCommentRepository commentRepository,
-                             FileStorageService fileStorageService) {
+                             TicketAttachmentRepository attachmentRepository,
+                             UserRepository userRepository,
+                             FileStorageService fileStorageService,
+                             EmailService emailService) {
         this.ticketRepository = ticketRepository;
-        this.commentRepository = commentRepository;
+        this.attachmentRepository = attachmentRepository;
+        this.userRepository = userRepository;
         this.fileStorageService = fileStorageService;
+        this.emailService = emailService;
     }
 
     @Override
     public TicketResponse createTicket(CreateTicketRequest request) {
-        String resourceId = request.getResourceId();
-        if (resourceId == null) {
-            throw new SubmissionException("Resource ID is required.");
+        String email = request.getEmail();
+        if (email == null) {
+            throw new SubmissionException("Email is required.");
         }
 
         String contactDetails = firstNonBlank(request.getContactDetails(), request.getPreferredContact());
@@ -62,7 +71,7 @@ public class TicketServiceImpl implements TicketService {
         }
 
         Ticket ticket = Ticket.builder()
-                .resourceId(resourceId)
+                .email(email)
                 .reporterUserId(request.getCurrentUserId())
                 .location(request.getLocation())
                 .category(request.getCategory())
@@ -70,34 +79,73 @@ public class TicketServiceImpl implements TicketService {
                 .priority(request.getPriority())
                 .contactDetails(contactDetails)
                 .status(TicketStatus.OPEN)
+            .createdAt(LocalDateTime.now())
+            .updatedAt(LocalDateTime.now())
                 .build();
 
-        addUploadedAttachments(ticket, files);
-        addPathAttachments(ticket, attachmentPaths);
-
         Ticket saved = ticketRepository.save(ticket);
+        addUploadedAttachments(saved, files);
+        addPathAttachments(saved, attachmentPaths);
+
+        // Send confirmation email
+        sendConfirmationEmail(saved);
+
         return mapToTicketResponse(saved, true);
+    }
+
+    private void sendConfirmationEmail(Ticket ticket) {
+        String subject = "Incident Reported: " + ticket.getId();
+        String htmlBody = String.format(
+            "<html><body>" +
+            "<h2>Incident Report Confirmation</h2>" +
+            "<p>Dear User,</p>" +
+            "<p>Your incident has been successfully reported. Our team will look into it shortly.</p>" +
+            "<p><b>Ticket ID:</b> %s</p>" +
+            "<p><b>Category:</b> %s</p>" +
+            "<p><b>Location:</b> %s</p>" +
+            "<p><b>Priority:</b> %s</p>" +
+            "<p><b>Description:</b> %s</p>" +
+            "<br>" +
+            "<p>Regards,<br>UniFlex Hub Support</p>" +
+            "</body></html>",
+            ticket.getId(), ticket.getCategory(), ticket.getLocation(), ticket.getPriority(), ticket.getDescription()
+        );
+
+        emailService.sendHtmlEmail(ticket.getEmail(), subject, htmlBody);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<TicketResponse> getAllTickets() {
-        return ticketRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
-                .stream()
+    public List<TicketResponse> getAllTickets(String currentUserId, TicketActorRole actorRole) {
+        List<Ticket> tickets;
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+
+        if (actorRole == TicketActorRole.ADMIN) {
+            tickets = ticketRepository.findAll(sort);
+        } else if (actorRole == TicketActorRole.TECHNICIAN) {
+            tickets = ticketRepository.findByAssignedTechnicianId(currentUserId, sort);
+        } else {
+            if (currentUserId == null || currentUserId.isBlank()) {
+                return new java.util.ArrayList<>();
+            }
+            tickets = ticketRepository.findByReporterUserId(currentUserId, sort);
+        }
+
+        return tickets.stream()
                 .map(ticket -> mapToTicketResponse(ticket, false))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public TicketResponse getTicketById(Long ticketId) {
+    public TicketResponse getTicketById(String ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
         return mapToTicketResponse(ticket, true);
     }
 
     @Override
-    public TicketResponse assignTechnician(Long ticketId, AssignTechnicianRequest request, Long currentUserId,
+    public TicketResponse assignTechnician(String ticketId, AssignTechnicianRequest request, String currentUserId,
                                            TicketActorRole actorRole) {
         requireRole(actorRole, TicketActorRole.ADMIN, "Only administrators can assign technicians.");
 
@@ -109,13 +157,30 @@ public class TicketServiceImpl implements TicketService {
         }
 
         ticket.setAssignedTechnicianId(request.getTechnicianId());
+        ticket.setStatus(TicketStatus.ASSIGNED);
+        ticket.setUpdatedAt(LocalDateTime.now());
+        
         Ticket updated = ticketRepository.save(ticket);
+
+        // Notify user via Email
+        try {
+            String subject = "Technician Assigned: Ticket #" + ticket.getId();
+            String body = "<h3>Technician Assigned</h3>" +
+                         "<p>An expert has been assigned to your maintenance request.</p>" +
+                         "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
+                         "<p><b>Status:</b> ASSIGNED</p>" +
+                         "<p>Work will begin shortly.</p>";
+            emailService.sendHtmlEmail(ticket.getEmail(), subject, body);
+        } catch (Exception e) {
+            System.err.println("Notification failed: " + e.getMessage());
+        }
+
         return mapToTicketResponse(updated, true);
     }
 
     @Override
-    public TicketResponse updateTicketStatus(Long ticketId, UpdateTicketStatusRequest request,
-                                             Long currentUserId, TicketActorRole actorRole) {
+    public TicketResponse updateTicketStatus(String ticketId, UpdateTicketStatusRequest request,
+                                             String currentUserId, TicketActorRole actorRole) {
         requireRole(actorRole, TicketActorRole.TECHNICIAN, "Only technicians can update ticket status.");
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -125,7 +190,7 @@ public class TicketServiceImpl implements TicketService {
             throw new SubmissionException("Ticket must be assigned to a technician before its status can be updated.");
         }
 
-        if (!Objects.equals(ticket.getAssignedTechnicianId(), String.valueOf(currentUserId))) {
+        if (!Objects.equals(ticket.getAssignedTechnicianId(), currentUserId)) {
             throw new ForbiddenOperationException("Only the assigned technician can update this ticket.");
         }
 
@@ -159,75 +224,122 @@ public class TicketServiceImpl implements TicketService {
             }
         }
 
-        ticket.setStatus(newStatus);
+        ticket.setStatus(request.getNewStatus());
         if (request.getResolutionNotes() != null) {
             ticket.setResolutionNotes(request.getResolutionNotes());
         }
+        ticket.setUpdatedAt(LocalDateTime.now());
 
         Ticket updated = ticketRepository.save(ticket);
+
+        // Notify user via Email
+        try {
+            String subject = "Status Update: Ticket #" + ticket.getId();
+            String body = "<h3>Ticket Status Updated</h3>" +
+                         "<p>The status of your maintenance request has changed.</p>" +
+                         "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
+                         "<p><b>New Status:</b> " + updated.getStatus() + "</p>";
+            
+            if (updated.getResolutionNotes() != null) {
+                body += "<p><b>Notes:</b> " + updated.getResolutionNotes() + "</p>";
+            }
+            
+            emailService.sendHtmlEmail(ticket.getEmail(), subject, body);
+        } catch (Exception e) {
+            System.err.println("Notification failed: " + e.getMessage());
+        }
+
         return mapToTicketResponse(updated, true);
     }
 
     @Override
-    public TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId) {
+    public TicketCommentResponse addComment(String ticketId, CreateCommentRequest request, String currentUserId, TicketActorRole role) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
+        String authorName = role == TicketActorRole.ADMIN ? "Guest Admin" : 
+                           role == TicketActorRole.TECHNICIAN ? "Guest Technician" : "Guest Student";
+        TicketActorRole authorRole = role;
+
+        // If frontend provided metadata, use it (useful for simulated/guest states)
+        if (request.getSenderName() != null && !request.getSenderName().isBlank()) {
+            authorName = request.getSenderName();
+        }
+        if (request.getSenderRole() != null && !request.getSenderRole().isBlank()) {
+            try {
+                authorRole = TicketActorRole.valueOf(request.getSenderRole().toUpperCase());
+            } catch (Exception ignored) {}
+        }
+
+        // If we have a real user ID, override with database data for security
+        if (!"0".equals(currentUserId)) {
+            User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+            authorName = currentUser.getUsername();
+            authorRole = TicketActorRole.valueOf(currentUser.getRole().name());
+        }
+
+        validateCommentAccess(ticket, currentUserId, authorRole);
+
         TicketComment comment = TicketComment.builder()
-                .ticket(ticket)
+                .id(java.util.UUID.randomUUID().toString())
+                .ticketId(ticket.getId())
                 .authorUserId(currentUserId)
-                .author("Staff") // Default for now
+                .author(authorName)
+                .authorRole(authorRole)
                 .message(request.getContent())
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        TicketComment saved = commentRepository.save(comment);
-        return mapToCommentResponse(saved);
+        ticket.getComments().add(comment);
+        ticketRepository.save(ticket);
+        
+        return mapToCommentResponse(comment);
     }
 
     @Override
-    public TicketCommentResponse updateComment(Long ticketId, Long commentId, UpdateCommentRequest request, Long currentUserId) {
+    public TicketCommentResponse updateComment(String ticketId, String commentId, UpdateCommentRequest request, String currentUserId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
-        TicketComment comment = commentRepository.findById(commentId)
+        TicketComment comment = ticket.getComments().stream()
+                .filter(c -> Objects.equals(c.getId(), commentId))
+                .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("TicketComment", "id", commentId));
-
-        if (!Objects.equals(comment.getTicket().getId(), ticket.getId())) {
-            throw new SubmissionException("Comment does not belong to the specified ticket.");
-        }
 
         if (!Objects.equals(comment.getAuthorUserId(), currentUserId)) {
             throw new ForbiddenOperationException("You are not allowed to edit this comment.");
         }
 
         comment.setMessage(request.getContent());
-        TicketComment updated = commentRepository.save(comment);
-        return mapToCommentResponse(updated);
+        ticketRepository.save(ticket);
+        
+        return mapToCommentResponse(comment);
     }
 
     @Override
-    public void deleteComment(Long ticketId, Long commentId, Long currentUserId, TicketActorRole actorRole) {
+    public void deleteComment(String ticketId, String commentId, String currentUserId, TicketActorRole actorRole) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
-        TicketComment comment = commentRepository.findById(commentId)
+        TicketComment commentToRemove = ticket.getComments().stream()
+                .filter(c -> Objects.equals(c.getId(), commentId))
+                .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("TicketComment", "id", commentId));
 
-        if (!Objects.equals(comment.getTicket().getId(), ticket.getId())) {
-            throw new SubmissionException("Comment does not belong to the specified ticket.");
-        }
-
-        boolean isOwner = Objects.equals(comment.getAuthorUserId(), currentUserId);
-        boolean isPrivilegedRole = actorRole == TicketActorRole.ADMIN || actorRole == TicketActorRole.TECHNICIAN;
-        if (!isOwner && !isPrivilegedRole) {
+        boolean isOwner = Objects.equals(commentToRemove.getAuthorUserId(), currentUserId);
+        boolean isAdmin = actorRole == TicketActorRole.ADMIN;
+        
+        if (!isOwner && !isAdmin) {
             throw new ForbiddenOperationException("Access Denied: You are not authorized to delete this comment.");
         }
 
-        commentRepository.delete(comment);
+        ticket.getComments().remove(commentToRemove);
+        ticketRepository.save(ticket);
     }
 
     private void addUploadedAttachments(Ticket ticket, List<MultipartFile> files) {
+        List<TicketAttachment> attachments = new java.util.ArrayList<>();
         for (MultipartFile file : files) {
             if (file == null || file.isEmpty()) {
                 continue;
@@ -235,25 +347,36 @@ public class TicketServiceImpl implements TicketService {
 
             validateImageFile(file);
             String storedPath = fileStorageService.storeFile(file, TICKET_UPLOAD_SUBDIR);
-            ticket.getAttachments().add(TicketAttachment.builder()
-                    .ticket(ticket)
+            attachments.add(TicketAttachment.builder()
+                    .ticketId(ticket.getId())
                     .filePath(storedPath)
                     .imagePath(storedPath)
+                    .createdAt(LocalDateTime.now())
                     .build());
+        }
+
+        if (!attachments.isEmpty()) {
+            attachmentRepository.saveAll(attachments);
         }
     }
 
     private void addPathAttachments(Ticket ticket, List<String> attachmentPaths) {
+        List<TicketAttachment> attachments = new java.util.ArrayList<>();
         for (String attachmentPath : attachmentPaths) {
             if (attachmentPath == null || attachmentPath.isBlank()) {
                 continue;
             }
 
-            ticket.getAttachments().add(TicketAttachment.builder()
-                    .ticket(ticket)
+            attachments.add(TicketAttachment.builder()
+                    .ticketId(ticket.getId())
                     .filePath(attachmentPath.trim())
                     .imagePath(attachmentPath.trim())
+                    .createdAt(LocalDateTime.now())
                     .build());
+        }
+
+        if (!attachments.isEmpty()) {
+            attachmentRepository.saveAll(attachments);
         }
     }
 
@@ -315,19 +438,32 @@ public class TicketServiceImpl implements TicketService {
         List<TicketCommentResponse> commentResponses = Collections.emptyList();
 
         if (includeChildren) {
-            attachmentResponses = ticket.getAttachments().stream()
+            attachmentResponses = attachmentRepository.findByTicketId(ticket.getId()).stream()
                     .map(this::mapToAttachmentResponse)
                     .collect(Collectors.toList());
 
-            List<TicketComment> comments = commentRepository.findByTicketIdOrderByCreatedAtAsc(ticket.getId());
-            commentResponses = comments.stream()
-                    .map(this::mapToCommentResponse)
-                    .collect(Collectors.toList());
+            if (ticket.getComments() != null) {
+                commentResponses = ticket.getComments().stream()
+                        .map(this::mapToCommentResponse)
+                        .collect(Collectors.toList());
+            }
+        }
+
+        String techName = null;
+        if (ticket.getAssignedTechnicianId() != null) {
+            techName = userRepository.findById(ticket.getAssignedTechnicianId())
+                .map(User::getUsername)
+                .orElse("Expert #" + ticket.getAssignedTechnicianId());
+            
+            // Special case for guest system
+            if ("0".equals(ticket.getAssignedTechnicianId())) {
+                techName = "Guest System";
+            }
         }
 
         return TicketResponse.builder()
                 .id(ticket.getId())
-                .resourceId(ticket.getResourceId())
+                .email(ticket.getEmail())
                 .location(ticket.getLocation())
                 .category(ticket.getCategory())
                 .description(ticket.getDescription())
@@ -335,7 +471,9 @@ public class TicketServiceImpl implements TicketService {
                 .status(ticket.getStatus())
                 .contactDetails(ticket.getContactDetails())
                 .preferredContact(ticket.getContactDetails())
+                .reporterUserId(ticket.getReporterUserId())
                 .assignedTechnicianId(ticket.getAssignedTechnicianId())
+                .assignedTechnicianName(techName)
                 .resolutionNotes(ticket.getResolutionNotes())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
@@ -361,15 +499,45 @@ public class TicketServiceImpl implements TicketService {
     }
 
     private TicketCommentResponse mapToCommentResponse(TicketComment comment) {
+        TicketActorRole responseRole = comment.getAuthorRole();
+        if (responseRole == null) {
+            if ("0".equals(comment.getAuthorUserId())) {
+                // Determine role from name for legacy/simulated guest comments
+                String author = comment.getAuthor();
+                if (author != null) {
+                    if (author.contains("Admin")) responseRole = TicketActorRole.ADMIN;
+                    else if (author.contains("Technician")) responseRole = TicketActorRole.TECHNICIAN;
+                    else responseRole = TicketActorRole.USER;
+                }
+            } else if (comment.getAuthorUserId() != null) {
+                responseRole = userRepository.findById(comment.getAuthorUserId())
+                    .map(user -> TicketActorRole.valueOf(user.getRole().name()))
+                    .orElse(TicketActorRole.USER);
+            }
+        }
+
         return TicketCommentResponse.builder()
                 .id(comment.getId())
-                .ticketId(comment.getTicket().getId())
+                .ticketId(comment.getTicketId())
                 .userId(comment.getAuthorUserId())
                 .authorUserId(comment.getAuthorUserId())
+                .author(comment.getAuthor())
+            .authorRole(responseRole == null ? null : responseRole.name())
                 .content(comment.getMessage())
                 .timestamp(comment.getCreatedAt())
                 .createdAt(comment.getCreatedAt())
                 .build();
+    }
+
+    private void validateCommentAccess(Ticket ticket, String currentUserId, TicketActorRole authorRole) {
+        // Allow Admins and Technicians to always comment
+        // Allow the original reporter to comment even before technician assignment
+        boolean isReporter = Objects.equals(ticket.getReporterUserId(), currentUserId);
+        boolean isStaff = authorRole == TicketActorRole.ADMIN || authorRole == TicketActorRole.TECHNICIAN;
+
+        if (!isReporter && !isStaff) {
+            throw new ForbiddenOperationException("Access Denied: You are not authorized to comment on this ticket.");
+        }
     }
 
     private void requireRole(TicketActorRole actorRole, TicketActorRole requiredRole, String message) {
@@ -388,5 +556,39 @@ public class TicketServiceImpl implements TicketService {
         }
 
         return null;
+    }
+
+    @Override
+    public TicketResponse startWork(String ticketId, String techId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+
+        if (ticket.getStatus() != TicketStatus.ASSIGNED) {
+            throw new SubmissionException("Work can only be started on tickets that are currently ASSIGNED. Current status: " + ticket.getStatus());
+        }
+
+        if (!Objects.equals(ticket.getAssignedTechnicianId(), techId)) {
+             // In a real system we would check roles here too
+             throw new ForbiddenOperationException("Only the assigned technician can start work on this ticket.");
+        }
+
+        ticket.setStatus(TicketStatus.IN_PROGRESS);
+        ticket.setUpdatedAt(LocalDateTime.now());
+
+        Ticket updated = ticketRepository.save(ticket);
+        
+        // Notify user via Email
+        try {
+            String subject = "Work Started: Ticket #" + ticket.getId();
+            String body = "<h3>Work In Progress</h3>" +
+                         "<p>A technician has officially started working on your request.</p>" +
+                         "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
+                         "<p><b>Status:</b> IN_PROGRESS</p>";
+            emailService.sendHtmlEmail(ticket.getEmail(), subject, body);
+        } catch (Exception e) {
+            System.err.println("Notification failed: " + e.getMessage());
+        }
+
+        return mapToTicketResponse(updated, true);
     }
 }

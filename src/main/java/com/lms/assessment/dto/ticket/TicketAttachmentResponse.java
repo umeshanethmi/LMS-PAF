@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TicketAttachmentResponse {
 
-    private Long id;
+    private String id;
     private String imagePath;
     private String fileUrl;
     private LocalDateTime createdAt;

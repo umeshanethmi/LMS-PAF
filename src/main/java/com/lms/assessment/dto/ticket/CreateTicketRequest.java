@@ -19,10 +19,12 @@ import java.util.List;
 public class CreateTicketRequest {
     
     @NotNull(message = "User ID is required")
-    private Long currentUserId;
+    private String currentUserId;
 
-    @Size(max = 255, message = "Resource ID must be at most 255 characters")
-    private String resourceId;
+    @NotBlank(message = "Email address is required")
+    @jakarta.validation.constraints.Email(message = "Invalid email format")
+    @Size(max = 255, message = "Email must be at most 255 characters")
+    private String email;
 
     @NotBlank(message = "Location is required")
     @Size(max = 255, message = "Location must be at most 255 characters")
