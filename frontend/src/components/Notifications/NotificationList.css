@@ -1,0 +1,213 @@
+/* src/components/Notifications/NotificationList.css */
+
+/* ── Panel Container ──────────────────────────────────────────────────────── */
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 360px;
+  max-height: 480px;
+  display: flex;
+  flex-direction: column;
+  background: #1e293b;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  z-index: 1000;
+  animation: panel-slide-down 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+}
+
+@keyframes panel-slide-down {
+  from { opacity: 0; transform: scale(0.95) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Panel Header ─────────────────────────────────────────────────────────── */
+.notif-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.notif-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+}
+
+.notif-panel-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.15);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+/* ── Scrollable List ──────────────────────────────────────────────────────── */
+.notif-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+}
+
+.notif-list::-webkit-scrollbar { width: 4px; }
+.notif-list::-webkit-scrollbar-track { background: transparent; }
+.notif-list::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 4px; }
+
+/* ── Individual Notification Item ─────────────────────────────────────────── */
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: default;
+  transition: background 0.15s ease;
+  position: relative;
+}
+
+.notif-item:last-child { border-bottom: none; }
+
+.notif-item:hover { background: rgba(255, 255, 255, 0.03); }
+
+.notif-item.unread { background: rgba(139, 92, 246, 0.06); }
+.notif-item.unread:hover { background: rgba(139, 92, 246, 0.1); }
+
+/* Unread indicator dot */
+.notif-item.unread::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.7);
+}
+
+/* ── Type Icon ────────────────────────────────────────────────────────────── */
+.notif-type-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.notif-type-icon.booking { background: rgba(16, 185, 129, 0.15); }
+.notif-type-icon.ticket  { background: rgba(245, 158, 11, 0.15); }
+
+/* ── Item Body ────────────────────────────────────────────────────────────── */
+.notif-item-body { flex: 1; min-width: 0; }
+
+.notif-item-message {
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  margin: 0 0 4px;
+  word-break: break-word;
+}
+
+.notif-item.unread .notif-item-message { color: #f1f5f9; font-weight: 500; }
+
+.notif-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif-item-time {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.notif-type-tag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.notif-type-tag.booking { color: #10b981; background: rgba(16, 185, 129, 0.12); }
+.notif-type-tag.ticket  { color: #f59e0b; background: rgba(245, 158, 11, 0.12); }
+
+/* ── Action Buttons ───────────────────────────────────────────────────────── */
+.notif-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.notif-item:hover .notif-item-actions { opacity: 1; }
+
+.notif-action-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.notif-action-btn:hover { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+.notif-action-btn.delete:hover { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+/* ── Empty State ──────────────────────────────────────────────────────────── */
+.notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #475569;
+  gap: 8px;
+}
+
+.notif-empty-icon { font-size: 36px; }
+
+.notif-empty-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* ── Loading / Error State ────────────────────────────────────────────────── */
+.notif-state-msg {
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.notif-error-msg {
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: #f87171;
+}
