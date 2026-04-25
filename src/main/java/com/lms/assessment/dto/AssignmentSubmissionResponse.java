@@ -12,9 +12,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AssignmentSubmissionResponse {
-    private Long id;
-    private Long assignmentId;
-    private Long studentId;
+    private String id;
+    private String assignmentId;
+    private String studentId;
     private LocalDateTime submittedAt;
     private String textAnswer;
     private String originalFilename;

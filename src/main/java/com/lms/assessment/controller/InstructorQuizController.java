@@ -25,50 +25,50 @@ public class InstructorQuizController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<QuizResponse> updateQuiz(@PathVariable Long id, @Valid @RequestBody CreateQuizRequest request) {
+    public ResponseEntity<QuizResponse> updateQuiz(@PathVariable String id, @Valid @RequestBody CreateQuizRequest request) {
         return ResponseEntity.ok(quizService.updateQuiz(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteQuiz(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteQuiz(@PathVariable String id) {
         quizService.deleteQuiz(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<QuizResponse> getQuizById(@PathVariable Long id) {
+    public ResponseEntity<QuizResponse> getQuizById(@PathVariable String id) {
         return ResponseEntity.ok(quizService.getQuizById(id));
     }
 
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<List<QuizResponse>> getQuizzesByCourse(@PathVariable Long courseId) {
+    public ResponseEntity<List<QuizResponse>> getQuizzesByCourse(@PathVariable String courseId) {
         return ResponseEntity.ok(quizService.getQuizzesByCourse(courseId));
     }
 
     @PostMapping("/{id}/questions")
-    public ResponseEntity<QuizQuestionResponse> addQuestion(@PathVariable Long id, @Valid @RequestBody CreateQuizQuestionRequest request) {
+    public ResponseEntity<QuizQuestionResponse> addQuestion(@PathVariable String id, @Valid @RequestBody CreateQuizQuestionRequest request) {
         request.setQuizId(id);
         return ResponseEntity.ok(quizService.addQuestion(request));
     }
 
     @GetMapping("/{id}/questions")
-    public ResponseEntity<List<QuizQuestionResponse>> getQuestionsByQuiz(@PathVariable Long id) {
+    public ResponseEntity<List<QuizQuestionResponse>> getQuestionsByQuiz(@PathVariable String id) {
         return ResponseEntity.ok(quizService.getQuestionsByQuiz(id));
     }
 
     @PutMapping("/questions/{questionId}")
-    public ResponseEntity<QuizQuestionResponse> updateQuestion(@PathVariable Long questionId, @Valid @RequestBody CreateQuizQuestionRequest request) {
+    public ResponseEntity<QuizQuestionResponse> updateQuestion(@PathVariable String questionId, @Valid @RequestBody CreateQuizQuestionRequest request) {
         return ResponseEntity.ok(quizService.updateQuestion(questionId, request));
     }
 
     @DeleteMapping("/questions/{questionId}")
-    public ResponseEntity<Void> deleteQuestion(@PathVariable Long questionId) {
+    public ResponseEntity<Void> deleteQuestion(@PathVariable String questionId) {
         quizService.deleteQuestion(questionId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/attempts/student/{studentId}")
-    public ResponseEntity<List<QuizAttemptResponse>> getStudentAttempts(@PathVariable Long id, @PathVariable Long studentId) {
+    public ResponseEntity<List<QuizAttemptResponse>> getStudentAttempts(@PathVariable String id, @PathVariable String studentId) {
         return ResponseEntity.ok(quizService.getAttemptsByQuizAndStudent(id, studentId));
     }
 }

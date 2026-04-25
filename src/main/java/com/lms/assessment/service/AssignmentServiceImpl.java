@@ -10,17 +10,15 @@ import com.lms.assessment.model.Assignment;
 import com.lms.assessment.model.AssignmentSubmission;
 import com.lms.assessment.repository.AssignmentRepository;
 import com.lms.assessment.repository.AssignmentSubmissionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -30,7 +28,6 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final AssignmentSubmissionRepository submissionRepository;
     private final FileStorageService fileStorageService;
 
-    @Autowired
     public AssignmentServiceImpl(AssignmentRepository assignmentRepository,
                                  AssignmentSubmissionRepository submissionRepository,
                                  FileStorageService fileStorageService) {
@@ -40,7 +37,6 @@ public class AssignmentServiceImpl implements AssignmentService {
     }
 
     @Override
-    @Transactional
     public AssignmentResponse createAssignment(CreateAssignmentRequest request) {
         Assignment assignment = Assignment.builder()
                 .courseId(request.getCourseId())
@@ -53,36 +49,31 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .totalMarks(request.getTotalMarks())
                 .published(request.getPublished() != null ? request.getPublished() : false)
                 .build();
-                
-        Assignment saved = assignmentRepository.save(assignment);
-        return mapToResponse(saved);
+
+        return mapToResponse(assignmentRepository.save(assignment));
     }
 
     @Override
-    public AssignmentResponse getAssignmentById(Long id) {
-        Assignment assignment = assignmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", id));
-        return mapToResponse(assignment);
+    public AssignmentResponse getAssignmentById(String id) {
+        return mapToResponse(loadAssignment(id));
     }
 
     @Override
-    public List<AssignmentResponse> getAssignmentsByCourse(Long courseId) {
-        List<Assignment> assignments = assignmentRepository.findByCourseId(courseId);
-        return assignments.stream().map(this::mapToResponse).collect(Collectors.toList());
+    public List<AssignmentResponse> getAssignmentsByCourse(String courseId) {
+        return assignmentRepository.findByCourseId(courseId).stream()
+                .map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Override
-    public List<AssignmentResponse> getPublishedAssignmentsByCourse(Long courseId) {
-        List<Assignment> assignments = assignmentRepository.findByCourseIdAndPublishedTrue(courseId);
-        return assignments.stream().map(this::mapToResponse).collect(Collectors.toList());
+    public List<AssignmentResponse> getPublishedAssignmentsByCourse(String courseId) {
+        return assignmentRepository.findByCourseIdAndPublishedTrue(courseId).stream()
+                .map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Override
-    @Transactional
-    public AssignmentResponse updateAssignment(Long id, CreateAssignmentRequest request) {
-        Assignment assignment = assignmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", id));
-        
+    public AssignmentResponse updateAssignment(String id, CreateAssignmentRequest request) {
+        Assignment assignment = loadAssignment(id);
+
         assignment.setTitle(request.getTitle());
         assignment.setDescription(request.getDescription());
         assignment.setDueDate(request.getDueDate());
@@ -92,39 +83,34 @@ public class AssignmentServiceImpl implements AssignmentService {
         if (request.getPublished() != null) {
             assignment.setPublished(request.getPublished());
         }
-        
-        Assignment updated = assignmentRepository.save(assignment);
-        return mapToResponse(updated);
+
+        return mapToResponse(assignmentRepository.save(assignment));
     }
 
     @Override
-    @Transactional
-    public void deleteAssignment(Long id) {
-        Assignment assignment = assignmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", id));
-        
-        // Securely delete associated submission files from disk to save space
-        for (AssignmentSubmission submission : assignment.getSubmissions()) {
+    public void deleteAssignment(String id) {
+        Assignment assignment = loadAssignment(id);
+
+        List<AssignmentSubmission> submissions = submissionRepository.findByAssignmentId(id);
+        for (AssignmentSubmission submission : submissions) {
             if (submission.getStoredFilename() != null) {
                 try {
                     fileStorageService.deleteFile(submission.getStoredFilename());
                 } catch (Exception ex) {
-                    // Log the error but allow DB deletion to proceed
                     log.error("Failed to delete file from disk: {}", submission.getStoredFilename(), ex);
                 }
             }
         }
-        
+        submissionRepository.deleteAll(submissions);
         assignmentRepository.delete(assignment);
     }
 
     @Override
-    @Transactional
     public AssignmentSubmissionResponse submitAssignment(SubmitAssignmentRequest request) {
-        Assignment assignment = assignmentRepository.findById(request.getAssignmentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", request.getAssignmentId()));
+        Assignment assignment = loadAssignment(request.getAssignmentId());
 
-        Optional<AssignmentSubmission> existingOpt = submissionRepository.findByAssignmentIdAndStudentId(assignment.getId(), request.getStudentId());
+        Optional<AssignmentSubmission> existingOpt =
+                submissionRepository.findByAssignmentIdAndStudentId(assignment.getId(), request.getStudentId());
 
         String storedFilename = null;
         String originalFilename = null;
@@ -136,15 +122,14 @@ public class AssignmentServiceImpl implements AssignmentService {
             if (assignment.getMaxFileSizeBytes() != null && file.getSize() > assignment.getMaxFileSizeBytes()) {
                 throw new SubmissionException("File size exceeds maximum allowed size.");
             }
-            
-            // Validate allowed file types
+
             if (assignment.getAllowedFileTypes() != null && !assignment.getAllowedFileTypes().isBlank()) {
                 String originalName = file.getOriginalFilename();
                 String extension = "";
                 if (originalName != null && originalName.lastIndexOf('.') > 0) {
                     extension = originalName.substring(originalName.lastIndexOf('.'));
                 }
-                
+
                 String allowed = assignment.getAllowedFileTypes().toLowerCase();
                 if (!allowed.contains(extension.toLowerCase())) {
                     throw new SubmissionException("Invalid file type. Allowed types: " + assignment.getAllowedFileTypes());
@@ -162,7 +147,6 @@ public class AssignmentServiceImpl implements AssignmentService {
         AssignmentSubmission submission;
         if (existingOpt.isPresent()) {
             submission = existingOpt.get();
-            // Delete old file if new one is provided
             if (submission.getStoredFilename() != null && storedFilename != null) {
                 fileStorageService.deleteFile(submission.getStoredFilename());
             }
@@ -176,7 +160,7 @@ public class AssignmentServiceImpl implements AssignmentService {
             submission.setStatus(status);
         } else {
             submission = AssignmentSubmission.builder()
-                    .assignment(assignment)
+                    .assignmentId(assignment.getId())
                     .studentId(request.getStudentId())
                     .textAnswer(request.getTextAnswer())
                     .storedFilename(storedFilename)
@@ -187,30 +171,26 @@ public class AssignmentServiceImpl implements AssignmentService {
                     .build();
         }
 
-        AssignmentSubmission saved = submissionRepository.save(submission);
-        return mapToSubmissionResponse(saved);
+        return mapToSubmissionResponse(submissionRepository.save(submission));
     }
 
     @Override
-    public List<AssignmentSubmissionResponse> getSubmissionsByAssignment(Long assignmentId) {
-        List<AssignmentSubmission> submissions = submissionRepository.findByAssignmentId(assignmentId);
-        return submissions.stream().map(this::mapToSubmissionResponse).collect(Collectors.toList());
+    public List<AssignmentSubmissionResponse> getSubmissionsByAssignment(String assignmentId) {
+        return submissionRepository.findByAssignmentId(assignmentId).stream()
+                .map(this::mapToSubmissionResponse).collect(Collectors.toList());
     }
 
     @Override
-    public AssignmentSubmissionResponse getSubmissionById(Long submissionId) {
-        AssignmentSubmission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new ResourceNotFoundException("AssignmentSubmission", "id", submissionId));
-        return mapToSubmissionResponse(submission);
+    public AssignmentSubmissionResponse getSubmissionById(String submissionId) {
+        return mapToSubmissionResponse(loadSubmission(submissionId));
     }
 
     @Override
-    @Transactional
-    public AssignmentSubmissionResponse gradeSubmission(Long submissionId, Integer obtainedMarks, String feedback) {
-        AssignmentSubmission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new ResourceNotFoundException("AssignmentSubmission", "id", submissionId));
-                
-        if (obtainedMarks > submission.getAssignment().getTotalMarks()) {
+    public AssignmentSubmissionResponse gradeSubmission(String submissionId, Integer obtainedMarks, String feedback) {
+        AssignmentSubmission submission = loadSubmission(submissionId);
+        Assignment assignment = loadAssignment(submission.getAssignmentId());
+
+        if (assignment.getTotalMarks() != null && obtainedMarks > assignment.getTotalMarks()) {
             throw new SubmissionException("Obtained marks cannot exceed total marks.");
         }
 
@@ -218,20 +198,26 @@ public class AssignmentServiceImpl implements AssignmentService {
         submission.setFeedback(feedback);
         submission.setStatus("GRADED");
 
-        AssignmentSubmission saved = submissionRepository.save(submission);
-        return mapToSubmissionResponse(saved);
+        return mapToSubmissionResponse(submissionRepository.save(submission));
     }
 
     @Override
-    public Resource downloadSubmissionFile(Long submissionId) {
-        AssignmentSubmission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new ResourceNotFoundException("AssignmentSubmission", "id", submissionId));
-
+    public Resource downloadSubmissionFile(String submissionId) {
+        AssignmentSubmission submission = loadSubmission(submissionId);
         if (submission.getStoredFilename() == null) {
             throw new ResourceNotFoundException("No file found for this submission.");
         }
-
         return fileStorageService.loadFileAsResource(submission.getStoredFilename());
+    }
+
+    private Assignment loadAssignment(String id) {
+        return assignmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", id));
+    }
+
+    private AssignmentSubmission loadSubmission(String id) {
+        return submissionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("AssignmentSubmission", "id", id));
     }
 
     private AssignmentResponse mapToResponse(Assignment entity) {
@@ -254,7 +240,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private AssignmentSubmissionResponse mapToSubmissionResponse(AssignmentSubmission entity) {
         return AssignmentSubmissionResponse.builder()
                 .id(entity.getId())
-                .assignmentId(entity.getAssignment().getId())
+                .assignmentId(entity.getAssignmentId())
                 .studentId(entity.getStudentId())
                 .submittedAt(entity.getSubmittedAt())
                 .textAnswer(entity.getTextAnswer())

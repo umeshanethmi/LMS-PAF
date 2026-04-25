@@ -38,6 +38,7 @@ node_modules/
 backend-startup*.log
 backend-run.log
 backend.log
+build-output.txt
 mvn-run-out.txt
 mvnw-err.txt
 mvnw-out.txt
@@ -46,3 +47,7 @@ out.txt
 
 ### Uploaded user content (not source) ###
 uploads/
+
+### Local secrets ###
+.env
+!.env.example

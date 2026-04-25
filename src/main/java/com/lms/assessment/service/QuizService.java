@@ -6,22 +6,22 @@ import java.util.List;
 
 public interface QuizService {
     QuizResponse createQuiz(CreateQuizRequest request);
-    QuizResponse getQuizById(Long id);
-    List<QuizResponse> getQuizzesByCourse(Long courseId);
-    List<QuizResponse> getPublishedQuizzesByCourse(Long courseId);
-    
-    QuizResponse updateQuiz(Long id, CreateQuizRequest request);
-    void deleteQuiz(Long id);
+    QuizResponse getQuizById(String id);
+    List<QuizResponse> getQuizzesByCourse(String courseId);
+    List<QuizResponse> getPublishedQuizzesByCourse(String courseId);
+
+    QuizResponse updateQuiz(String id, CreateQuizRequest request);
+    void deleteQuiz(String id);
 
     QuizQuestionResponse addQuestion(CreateQuizQuestionRequest request);
-    QuizQuestionResponse updateQuestion(Long questionId, CreateQuizQuestionRequest request);
-    void deleteQuestion(Long questionId);
-    
-    List<QuizQuestionResponse> getQuestionsByQuiz(Long quizId);
+    QuizQuestionResponse updateQuestion(String questionId, CreateQuizQuestionRequest request);
+    void deleteQuestion(String questionId);
+
+    List<QuizQuestionResponse> getQuestionsByQuiz(String quizId);
 
     QuizAttemptResponse startAttempt(StartQuizAttemptRequest request);
     QuizAnswerResponse submitAnswer(SubmitQuizAnswerRequest request);
-    QuizAttemptResponse completeAttempt(Long attemptId);
-    
-    List<QuizAttemptResponse> getAttemptsByQuizAndStudent(Long quizId, Long studentId);
+    QuizAttemptResponse completeAttempt(String attemptId);
+
+    List<QuizAttemptResponse> getAttemptsByQuizAndStudent(String quizId, String studentId);
 }

@@ -18,10 +18,10 @@ import java.time.LocalDateTime;
 public class CreateQuizRequest {
     
     @NotNull(message = "Course ID is required")
-    private Long courseId;
+    private String courseId;
     
     @NotNull(message = "Instructor ID is required")
-    private Long createdByInstructorId;
+    private String createdByInstructorId;
     
     @NotBlank(message = "Title cannot be blank")
     private String title;

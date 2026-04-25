@@ -26,40 +26,40 @@ public class InstructorAssignmentController {
         return ResponseEntity.ok(assignmentService.createAssignment(request));
     }
     @PutMapping("/{id}")
-    public ResponseEntity<AssignmentResponse> updateAssignment(@PathVariable Long id, @Valid @RequestBody CreateAssignmentRequest request) {
+    public ResponseEntity<AssignmentResponse> updateAssignment(@PathVariable String id, @Valid @RequestBody CreateAssignmentRequest request) {
         return ResponseEntity.ok(assignmentService.updateAssignment(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAssignment(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteAssignment(@PathVariable String id) {
         assignmentService.deleteAssignment(id);
         return ResponseEntity.noContent().build();
     }
     @GetMapping("/{id}")
-    public ResponseEntity<AssignmentResponse> getAssignmentById(@PathVariable Long id) {
+    public ResponseEntity<AssignmentResponse> getAssignmentById(@PathVariable String id) {
         return ResponseEntity.ok(assignmentService.getAssignmentById(id));
     }
 
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<List<AssignmentResponse>> getAssignmentsByCourse(@PathVariable Long courseId) {
+    public ResponseEntity<List<AssignmentResponse>> getAssignmentsByCourse(@PathVariable String courseId) {
         return ResponseEntity.ok(assignmentService.getAssignmentsByCourse(courseId));
     }
 
     @GetMapping("/{id}/submissions")
-    public ResponseEntity<List<AssignmentSubmissionResponse>> getSubmissions(@PathVariable Long id) {
+    public ResponseEntity<List<AssignmentSubmissionResponse>> getSubmissions(@PathVariable String id) {
         return ResponseEntity.ok(assignmentService.getSubmissionsByAssignment(id));
     }
 
     @PutMapping("/submissions/{submissionId}/grade")
     public ResponseEntity<AssignmentSubmissionResponse> gradeSubmission(
-            @PathVariable Long submissionId,
+            @PathVariable String submissionId,
             @RequestParam Integer obtainedMarks,
             @RequestParam String feedback) {
         return ResponseEntity.ok(assignmentService.gradeSubmission(submissionId, obtainedMarks, feedback));
     }
     
     @GetMapping("/submissions/{submissionId}/file")
-    public ResponseEntity<Resource> downloadSubmissionFile(@PathVariable Long submissionId) {
+    public ResponseEntity<Resource> downloadSubmissionFile(@PathVariable String submissionId) {
         Resource resource = assignmentService.downloadSubmissionFile(submissionId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
