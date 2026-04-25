@@ -26,7 +26,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class SmartCampusGlobalExceptionHandler {
 
     // ── 400 Bad Request – Validation failures (@Valid) ────────────────────────
     @ExceptionHandler(MethodArgumentNotValidException.class)
