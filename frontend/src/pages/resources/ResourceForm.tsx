@@ -226,7 +226,7 @@ export default function ResourceForm() {
 
   useEffect(() => {
     if (isEdit && id) {
-      resourceService.getById(Number(id)).then(res => {
+      resourceService.getById(id).then(res => {
         const r = res.data;
         reset({
           name: r.name,
@@ -256,7 +256,7 @@ export default function ResourceForm() {
     };
     try {
       if (isEdit && id) {
-        await resourceService.update(Number(id), payload);
+        await resourceService.update(id, payload);
       } else {
         await resourceService.create(payload);
       }

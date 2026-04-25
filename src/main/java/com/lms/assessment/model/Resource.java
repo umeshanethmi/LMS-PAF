@@ -2,21 +2,25 @@ package com.lms.assessment.model;
 
 import com.lms.assessment.model.enums.ResourceStatus;
 import com.lms.assessment.model.enums.ResourceType;
-import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-@Entity
-@Table(name = "resources")
+@Document(collection = "resources")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,17 +28,14 @@ import java.time.LocalTime;
 public class Resource {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
     @NotBlank
     @Size(max = 120)
-    @Column(nullable = false, length = 120)
     private String name;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
+    @Indexed
     private ResourceType type;
 
     @Min(1)
@@ -43,35 +44,28 @@ public class Resource {
 
     @NotBlank
     @Size(max = 200)
-    @Column(nullable = false, length = 200)
     private String location;
 
     @Size(max = 2000)
-    @Column(length = 2000)
     private String description;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
+    @Indexed
     private ResourceStatus status;
 
     private LocalTime availabilityStart;
 
     private LocalTime availabilityEnd;
 
-    // Either "MON,TUE,WED" or "MON:08:00-17:00,TUE:08:00-17:00"
     @Size(max = 500)
-    @Column(length = 500)
     private String availableDays;
 
     @Size(max = 500)
-    @Column(length = 500)
     private String imageUrl;
 
-    @CreationTimestamp
-    @Column(updatable = false)
+    @CreatedDate
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
 import CreateAssignment from './pages/instructor/CreateAssignment';
@@ -74,13 +75,20 @@ function Navbar() {
 }
 
 function Home() {
-  const { login, role } = useAuth();
+  const { login, role, user } = useAuth();
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   if (role) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500">You are logged in as <span className="font-semibold capitalize">{role}</span>.</p>
+          <p className="text-gray-500">
+            You are logged in as <span className="font-semibold">{user?.username}</span>
+            {' '}({user?.role}).
+          </p>
           <Link
             to={role === 'instructor' ? '/instructor' : '/student'}
             className="mt-4 inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
@@ -92,11 +100,26 @@ function Home() {
     );
   }
 
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      await login(identifier.trim(), password);
+    } catch (err: unknown) {
+      const message = err && typeof err === 'object' && 'response' in err
+        ? 'Invalid email or password.'
+        : 'Login failed. Make sure the backend is running.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full text-center">
-        {/* Logo */}
-        <div className="mb-8">
+      <div className="max-w-md w-full">
+        <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl shadow-lg mb-4">
             <span className="text-white text-2xl font-bold">L</span>
           </div>
@@ -104,35 +127,61 @@ function Home() {
           <p className="text-gray-500 mt-2 text-sm">Learning Management System</p>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Welcome back</h2>
-          <p className="text-sm text-gray-500 mb-6">Select your role to continue</p>
+        <form
+          onSubmit={onSubmit}
+          className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-5"
+        >
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">Sign in</h2>
+            <p className="text-sm text-gray-500 mt-1">Use your email or username to continue</p>
+          </div>
 
           <div className="space-y-3">
-            <button
-              onClick={() => login('instructor')}
-              className="w-full flex items-center gap-4 px-5 py-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
-            >
-              <span className="text-2xl">👨‍🏫</span>
-              <div className="text-left">
-                <p className="font-semibold text-sm">Login as Instructor</p>
-                <p className="text-indigo-200 text-xs">Manage courses, resources & assessments</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => login('student')}
-              className="w-full flex items-center gap-4 px-5 py-4 bg-white text-gray-800 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
-            >
-              <span className="text-2xl">🎓</span>
-              <div className="text-left">
-                <p className="font-semibold text-sm">Login as Student</p>
-                <p className="text-gray-400 text-xs">View tasks, quizzes & resources</p>
-              </div>
-            </button>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Email or username</label>
+              <input
+                type="text"
+                autoComplete="username"
+                value={identifier}
+                onChange={e => setIdentifier(e.target.value)}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="admin@sliit.lk"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
           </div>
-        </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 transition-colors"
+          >
+            {submitting ? 'Signing in…' : 'Sign in'}
+          </button>
+
+          <p className="text-xs text-gray-400 text-center pt-2 border-t border-gray-100">
+            Try <code className="bg-gray-100 px-1 rounded">admin@sliit.lk / Admin123</code>,
+            {' '}<code className="bg-gray-100 px-1 rounded">instructor / instructor123</code>, or
+            {' '}<code className="bg-gray-100 px-1 rounded">student / student123</code>
+          </p>
+        </form>
       </div>
     </div>
   );

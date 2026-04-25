@@ -4,7 +4,7 @@ export type ResourceType = 'LECTURE_HALL' | 'LAB' | 'MEETING_ROOM' | 'EQUIPMENT'
 export type ResourceStatus = 'ACTIVE' | 'OUT_OF_SERVICE';
 
 export interface Resource {
-  id: number;
+  id: string;
   name: string;
   type: ResourceType;
   capacity: number | null;
@@ -49,18 +49,18 @@ export const resourceService = {
     return apiClient.get<Resource[]>(`/resources?${params.toString()}`);
   },
 
-  getById: (id: number) =>
+  getById: (id: string) =>
     apiClient.get<Resource>(`/resources/${id}`),
 
   create: (data: CreateResourceRequest) =>
     apiClient.post<Resource>('/resources', data),
 
-  update: (id: number, data: CreateResourceRequest) =>
+  update: (id: string, data: CreateResourceRequest) =>
     apiClient.put<Resource>(`/resources/${id}`, data),
 
-  updateStatus: (id: number, status: ResourceStatus) =>
+  updateStatus: (id: string, status: ResourceStatus) =>
     apiClient.patch<Resource>(`/resources/${id}/status?status=${status}`),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     apiClient.delete(`/resources/${id}`),
 };

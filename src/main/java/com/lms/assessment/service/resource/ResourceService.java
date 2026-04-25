@@ -10,9 +10,9 @@ import java.util.List;
 
 public interface ResourceService {
     ResourceResponse createResource(CreateResourceRequest request);
-    ResourceResponse getResourceById(Long id);
+    ResourceResponse getResourceById(String id);
     List<ResourceResponse> getAllResources(ResourceType type, Integer minCapacity, String location, ResourceStatus status);
-    ResourceResponse updateResource(Long id, UpdateResourceRequest request);
-    void deleteResource(Long id);
-    ResourceResponse updateStatus(Long id, ResourceStatus status);
+    ResourceResponse updateResource(String id, UpdateResourceRequest request);
+    void deleteResource(String id);
+    ResourceResponse updateStatus(String id, ResourceStatus status);
 }

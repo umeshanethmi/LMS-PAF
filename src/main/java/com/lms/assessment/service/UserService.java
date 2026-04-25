@@ -4,6 +4,8 @@ import com.lms.assessment.dto.user.AuthResponse;
 import com.lms.assessment.dto.user.LoginRequest;
 import com.lms.assessment.model.user.User;
 import com.lms.assessment.repository.user.UserRepository;
+import com.lms.assessment.security.JwtService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,14 +17,21 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        seedUsers();
+        this.jwtService = jwtService;
     }
 
-    private void seedUsers() {
+    @PostConstruct
+    void seedUsers() {
+        if (!userRepository.existsByEmail("admin@sliit.lk")) {
+            registerUser("superadmin", "Admin123", "admin@sliit.lk", User.Role.SUPERADMIN);
+        }
         if (!userRepository.existsByUsername("admin")) {
             registerUser("admin", "admin123", "admin@campus.com", User.Role.ADMIN);
         }
@@ -31,6 +40,12 @@ public class UserService {
         }
         if (!userRepository.existsByUsername("user")) {
             registerUser("user", "user123", "resident@campus.com", User.Role.USER);
+        }
+        if (!userRepository.existsByUsername("instructor")) {
+            registerUser("instructor", "instructor123", "instructor@sliit.lk", User.Role.INSTRUCTOR);
+        }
+        if (!userRepository.existsByUsername("student")) {
+            registerUser("student", "student123", "student@sliit.lk", User.Role.STUDENT);
         }
     }
 
@@ -44,14 +59,22 @@ public class UserService {
     }
 
     public Optional<AuthResponse> login(LoginRequest request) {
-        return userRepository.findByUsername(request.getUsername())
-                .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()))
-                .map(user -> AuthResponse.builder()
-                        .id(user.getId())
-                        .username(user.getUsername())
-                        .email(user.getEmail())
-                        .role(user.getRole())
-                        .token("mock-jwt-token-" + user.getId())
+        String identifier = request.getUsername();
+        if (identifier == null || identifier.isBlank()) {
+            return Optional.empty();
+        }
+        Optional<User> user = identifier.contains("@")
+                ? userRepository.findByEmail(identifier)
+                : userRepository.findByUsername(identifier);
+
+        return user
+                .filter(u -> passwordEncoder.matches(request.getPassword(), u.getPassword()))
+                .map(u -> AuthResponse.builder()
+                        .id(u.getId())
+                        .username(u.getUsername())
+                        .email(u.getEmail())
+                        .role(u.getRole())
+                        .token(jwtService.generateToken(u))
                         .build());
     }
 
@@ -62,7 +85,7 @@ public class UserService {
     public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
-    
+
     public User updateUserRole(String id, User.Role role) {
         User user = userRepository.findById(id).orElseThrow();
         user.setRole(role);

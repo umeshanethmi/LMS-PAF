@@ -59,7 +59,7 @@ export default function ResourceDetail() {
 
   useEffect(() => {
     if (id) {
-      resourceService.getById(Number(id))
+      resourceService.getById(id)
         .then(res => setResource(res.data))
         .catch(() => {
           alert('Resource not found.');

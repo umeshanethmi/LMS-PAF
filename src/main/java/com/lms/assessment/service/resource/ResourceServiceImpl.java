@@ -10,9 +10,7 @@ import com.lms.assessment.model.enums.ResourceType;
 import com.lms.assessment.repository.resource.ResourceRepository;
 import com.lms.assessment.repository.resource.ResourceSpecification;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,14 +20,15 @@ import java.util.stream.Collectors;
 public class ResourceServiceImpl implements ResourceService {
 
     private final ResourceRepository resourceRepository;
+    private final ResourceSpecification resourceSpecification;
 
-    @Autowired
-    public ResourceServiceImpl(ResourceRepository resourceRepository) {
+    public ResourceServiceImpl(ResourceRepository resourceRepository,
+                               ResourceSpecification resourceSpecification) {
         this.resourceRepository = resourceRepository;
+        this.resourceSpecification = resourceSpecification;
     }
 
     @Override
-    @Transactional
     public ResourceResponse createResource(CreateResourceRequest request) {
         Resource resource = Resource.builder()
                 .name(request.getName())
@@ -50,7 +49,7 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     @Override
-    public ResourceResponse getResourceById(Long id) {
+    public ResourceResponse getResourceById(String id) {
         Resource resource = resourceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Resource", "id", id));
         return mapToResponse(resource);
@@ -58,14 +57,14 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     public List<ResourceResponse> getAllResources(ResourceType type, Integer minCapacity, String location, ResourceStatus status) {
-        return resourceRepository.findAll(
-                ResourceSpecification.withFilters(type, minCapacity, location, status)
-        ).stream().map(this::mapToResponse).collect(Collectors.toList());
+        return resourceSpecification.findWithFilters(type, minCapacity, location, status)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional
-    public ResourceResponse updateResource(Long id, UpdateResourceRequest request) {
+    public ResourceResponse updateResource(String id, UpdateResourceRequest request) {
         Resource resource = resourceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Resource", "id", id));
 
@@ -86,17 +85,16 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     @Override
-    @Transactional
-    public void deleteResource(Long id) {
-        Resource resource = resourceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Resource", "id", id));
-        resourceRepository.delete(resource);
+    public void deleteResource(String id) {
+        if (!resourceRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Resource", "id", id);
+        }
+        resourceRepository.deleteById(id);
         log.info("Deleted resource with id: {}", id);
     }
 
     @Override
-    @Transactional
-    public ResourceResponse updateStatus(Long id, ResourceStatus status) {
+    public ResourceResponse updateStatus(String id, ResourceStatus status) {
         Resource resource = resourceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Resource", "id", id));
         resource.setStatus(status);

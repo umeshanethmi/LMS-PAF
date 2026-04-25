@@ -102,7 +102,7 @@ export default function ResourceCatalogue() {
     setFilters({});
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this resource?')) return;
     try {
       await resourceService.delete(id);
