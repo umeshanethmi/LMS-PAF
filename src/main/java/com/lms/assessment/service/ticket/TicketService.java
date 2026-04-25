@@ -1,34 +1,29 @@
 package com.lms.assessment.service.ticket;
 
 import com.lms.assessment.dto.ticket.*;
+import com.lms.assessment.model.ticket.TicketActorRole;
 
 import java.util.List;
 
 public interface TicketService {
 
-    TicketResponse createTicket(CreateTicketRequest request, Long currentUserId);
+    TicketResponse createTicket(CreateTicketRequest request);
 
-    /**
-     * Normal users see only their own tickets; when canViewAll is true
-     * (for technicians/admins) this returns all tickets.
-     */
-    List<TicketResponse> getMyTickets(Long currentUserId, boolean canViewAll);
+    List<TicketResponse> getAllTickets(String currentUserId, TicketActorRole actorRole);
 
-    /**
-     * Fetch a ticket for the current user, enforcing visibility rules
-     * (normal users only see own tickets, technicians/admins can see all).
-     */
-    TicketResponse getTicketByIdForUser(Long ticketId, Long currentUserId, boolean canViewAll);
+    TicketResponse getTicketById(String ticketId);
 
-    /**
-     * Update status according to workflow rules. Only staff/technicians/admins
-     * should be allowed to change status; REJECTED is reserved for them.
-     */
-    TicketResponse updateTicketStatus(Long ticketId, UpdateTicketStatusRequest request,
-                                      Long currentUserId, boolean isStaffOrAdmin);
+    TicketResponse assignTechnician(String ticketId, AssignTechnicianRequest request, String currentUserId,
+                                    TicketActorRole actorRole);
 
-    TicketCommentResponse addComment(Long ticketId, CreateCommentRequest request, Long currentUserId,
-                                     boolean canViewAll);
+    TicketResponse updateTicketStatus(String ticketId, UpdateTicketStatusRequest request,
+                                      String currentUserId, TicketActorRole actorRole);
 
-    void deleteComment(Long ticketId, Long commentId, Long currentUserId, boolean isStaffOrAdmin);
+    TicketCommentResponse addComment(String ticketId, CreateCommentRequest request, String currentUserId, TicketActorRole role);
+
+    TicketCommentResponse updateComment(String ticketId, String commentId, UpdateCommentRequest request, String currentUserId);
+
+    void deleteComment(String ticketId, String commentId, String currentUserId, TicketActorRole actorRole);
+
+    TicketResponse startWork(String ticketId, String techId);
 }

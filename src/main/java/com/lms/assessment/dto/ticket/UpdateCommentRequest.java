@@ -11,12 +11,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateCommentRequest {
+public class UpdateCommentRequest {
 
     @NotBlank(message = "Comment content is required")
     @Size(max = 2000, message = "Comment content must be at most 2000 characters")
     private String content;
-
-    private String senderName;
-    private String senderRole;
 }

@@ -5,13 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TicketAttachmentResponse {
 
-    private Long id;
-    private String fileName;
+    private String id;
+    private String imagePath;
     private String fileUrl;
+    private LocalDateTime createdAt;
 }
