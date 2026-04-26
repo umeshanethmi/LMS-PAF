@@ -12,7 +12,8 @@ import {
   Users,
   Activity,
   User as UserIcon,
-  TriangleAlert
+  TriangleAlert,
+  Plus
 } from 'lucide-react';
 import TicketCreateForm from '../../components/tickets/TicketCreateForm';
 import TicketList from '../../components/tickets/TicketList';
@@ -22,8 +23,9 @@ import type { Ticket, TicketRole } from '../../services/ticketApi';
 import { useAuth } from '../../contexts/AuthContext';
 
 function toApiRole(role: string | null): TicketRole {
-  if (role === 'admin') return 'ADMIN';
-  if (role === 'technician') return 'TECHNICIAN';
+  const upper = role?.toUpperCase();
+  if (upper === 'ADMIN') return 'ADMIN';
+  if (upper === 'TECHNICIAN') return 'TECHNICIAN';
   return 'USER';
 }
 
@@ -44,11 +46,12 @@ const StatCard = ({ label, value, icon, bgClass, trend }: { label: string, value
 );
 
 function IncidentTicketsPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const location = useLocation();
   const apiRole = toApiRole(role);
-  const isAdmin = role === 'ADMIN';
-  const isTechnician = role === 'TECHNICIAN';
+  const isAdmin = apiRole === 'ADMIN';
+  const isTechnician = apiRole === 'TECHNICIAN';
+  const isUser = apiRole === 'USER';
   
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -60,7 +63,8 @@ function IncidentTicketsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const currentUserId = role === 'ADMIN' ? '999' : role === 'TECHNICIAN' ? '888' : '1'; // Role-based IDs for testing
+  // Use the actual logged-in user's ID
+  const currentUserId = user?.id || '0';
 
   const loadTickets = async () => {
     try {
@@ -102,22 +106,20 @@ function IncidentTicketsPage() {
       // Clear state so it doesn't reopen on refresh
       window.history.replaceState({}, document.title);
     }
-  }, []);
+  }, [user]);
 
   const filteredTickets = useMemo(() => {
     let result = [...tickets];
     
-    // Role-based filtering
-    if (role === 'TECHNICIAN') {
-       // Filter for tickets assigned to this technician
-       // For demo/testing: Technicians see tickets assigned to '1' or their specific Tech ID
+    // Role-based filtering handled by backend ideally, but we have frontend fail-safes
+    if (isTechnician) {
        result = result.filter(t => 
          t.assignedTechnicianId === currentUserId.toString() || 
          t.assignedTechnicianId === 'TECH-' + currentUserId ||
          (t.assignedTechnicianId && t.assignedTechnicianId.startsWith('TECH'))
        );
-    } else if (role === 'USER') {
-       // Assuming userId is tracked. If not in model yet, we show all for now or filter if available
+    } else if (isUser) {
+       // If backend isn't filtering for user, we can enforce it here
        // result = result.filter(t => t.reportedBy === currentUserId);
     }
 
@@ -172,7 +174,7 @@ function IncidentTicketsPage() {
             <div>
                <div className="flex items-center gap-3">
                  <h1 className="text-4xl font-black tracking-tighter text-white lg:text-5xl">
-                   {isAdmin ? 'Admin Panel' : isTechnician ? 'Tech Hub' : 'Incident Portal'}
+                   {isAdmin ? 'Admin Panel' : isTechnician ? 'Tech Hub' : 'Student Incident Hub'}
                  </h1>
                  <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest border border-white/10">Module C</span>
                </div>
@@ -182,11 +184,12 @@ function IncidentTicketsPage() {
             </div>
           </div>
           
-          {(role === 'USER' || role === 'ADMIN') && (
+          {(isUser || isAdmin) && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="group relative flex items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 text-sm font-black uppercase tracking-widest text-slate-950 shadow-2xl transition-all hover:scale-105 hover:bg-indigo-50 active:scale-95"
             >
+              <Plus className="h-4 w-4" />
               Report Incident
               <div className="rounded-lg bg-slate-950 p-1 text-white transition-transform group-hover:rotate-90">
                 <TicketIcon className="h-4 w-4" />

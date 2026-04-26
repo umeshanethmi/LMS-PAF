@@ -2,6 +2,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/common/Sidebar';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
+import IncidentTicketsPage from './pages/maintenance/IncidentTicketsPage';
+import NotificationsPage from './pages/NotificationsPage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 import './App.css';
 
 function App() {
@@ -14,10 +18,10 @@ function App() {
           <Route path="/admin" element={<DashboardPage overrideRole="ADMIN" />} />
           <Route path="/tech" element={<DashboardPage overrideRole="TECHNICIAN" />} />
           <Route path="/users" element={<UserManagementPage />} />
-          <Route path="/tickets" element={<DashboardPage />} />
-          <Route path="/notifications" element={<DashboardPage />} />
-          <Route path="/profile" element={<DashboardPage />} />
-          <Route path="/settings" element={<DashboardPage />} />
+          <Route path="/tickets" element={<IncidentTicketsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
