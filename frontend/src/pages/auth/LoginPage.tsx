@@ -12,7 +12,7 @@ const LoginPage: React.FC = () => {
     const navigate = useNavigate();
 
     const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+        window.location.href = 'http://localhost:9090/oauth2/authorization/google';
     };
 
     const handleManualLogin = async (e: React.FormEvent) => {
@@ -21,7 +21,7 @@ const LoginPage: React.FC = () => {
         setError('');
         
         try {
-            const response = await fetch('http://localhost:8080/api/auth/login', {
+            const response = await fetch('http://localhost:9090/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })

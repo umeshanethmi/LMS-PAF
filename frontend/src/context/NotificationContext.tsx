@@ -31,7 +31,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!token || !isAuthenticated) return;
     
     try {
-      const response = await fetch('http://localhost:8080/api/notifications', {
+      const response = await fetch('http://localhost:9090/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -51,7 +51,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const markAsRead = async (id: string) => {
     if (!token) return;
     try {
-      const response = await fetch(`http://localhost:8080/api/notifications/${id}/read`, {
+      const response = await fetch(`http://localhost:9090/api/notifications/${id}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -69,7 +69,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const deleteNotification = async (id: string) => {
     if (!token) return;
     try {
-      const response = await fetch(`http://localhost:8080/api/notifications/${id}`, {
+      const response = await fetch(`http://localhost:9090/api/notifications/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

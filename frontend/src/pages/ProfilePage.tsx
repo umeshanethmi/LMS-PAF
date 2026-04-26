@@ -108,7 +108,7 @@ const ProfilePage: React.FC = () => {
     setErrors({}); // Clear previous errors
     
     try {
-      const response = await fetch('http://localhost:8080/api/auth/profile', {
+      const response = await fetch('http://localhost:9090/api/auth/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
