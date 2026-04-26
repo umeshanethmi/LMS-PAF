@@ -38,8 +38,7 @@ const Sidebar = () => {
       { icon: Building2, label: 'Manage Resources', path: '/admin/resources' }
     ] : []),
     ...(isAdmin ? [
-      { icon: User, label: 'User Management', path: '/users' },
-      { icon: Briefcase, label: 'Admin View', path: '/admin' }
+      { icon: User, label: 'User Management', path: '/users' }
     ] : []),
     ...(isTechnician ? [
       { icon: Briefcase, label: 'Tech Hub', path: '/tech' }
