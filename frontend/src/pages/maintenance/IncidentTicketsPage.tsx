@@ -29,8 +29,11 @@ function toApiRole(role: string | null): TicketRole {
   return 'USER';
 }
 
-const StatCard = ({ label, value, icon, bgClass, trend }: { label: string, value: number, icon: React.ReactNode, bgClass: string, trend?: string }) => (
-  <div className={`group relative overflow-hidden rounded-[2rem] border p-6 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl ${bgClass}`}>
+const StatCard = ({ label, value, icon, bgClass, trend, onClick, isActive }: { label: string, value: number, icon: React.ReactNode, bgClass: string, trend?: string, onClick?: () => void, isActive?: boolean }) => (
+  <div 
+    onClick={onClick}
+    className={`group relative overflow-hidden rounded-[2rem] border p-6 transition-all duration-500 hover:scale-[1.02] cursor-pointer ${isActive ? 'ring-4 ring-white/20 scale-[1.02] shadow-2xl' : 'hover:shadow-2xl'} ${bgClass}`}
+  >
     <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/5 blur-2xl transition-all group-hover:bg-white/10"></div>
     <div className="flex items-center justify-between relative z-10">
       <div className="rounded-2xl bg-white/10 p-2.5 backdrop-blur-md border border-white/10 shadow-inner">
@@ -62,6 +65,23 @@ function IncidentTicketsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+
+  const categories = [
+    'Electrical',
+    'Plumbing',
+    'IT / Network',
+    'HVAC / Cooling',
+    'Cleaning',
+    'Furniture',
+    'Security',
+    'Other'
+  ];
+
+  const statuses = ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'];
+  const priorities = ['LOW', 'MEDIUM', 'HIGH'];
 
   // Use the actual logged-in user's ID
   const currentUserId = user?.id || '0';
@@ -127,11 +147,25 @@ function IncidentTicketsPage() {
       result = result.filter(t => 
         t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (t.email && t.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        t.category.toLowerCase().includes(searchTerm.toLowerCase())
+        t.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+
+    if (statusFilter !== 'ALL') {
+      result = result.filter(t => t.status === statusFilter);
+    }
+
+    if (priorityFilter !== 'ALL') {
+      result = result.filter(t => t.priority === priorityFilter);
+    }
+
+    if (categoryFilter !== 'ALL') {
+      result = result.filter(t => t.category === categoryFilter);
+    }
+
     return result;
-  }, [tickets, role, searchTerm, currentUserId]);
+  }, [tickets, role, searchTerm, currentUserId, statusFilter, priorityFilter, categoryFilter]);
 
   const summary = useMemo(() => {
     const open = tickets.filter((t) => t.status === 'OPEN').length;
@@ -206,6 +240,8 @@ function IncidentTicketsPage() {
             icon={<TicketIcon className="h-5 w-5 text-indigo-300" />} 
             bgClass="bg-indigo-600/20 border-indigo-500/20 shadow-indigo-900/10" 
             trend="Live Sync"
+            onClick={() => setStatusFilter('ALL')}
+            isActive={statusFilter === 'ALL'}
           />
           <StatCard 
             label="Pending Work" 
@@ -213,6 +249,8 @@ function IncidentTicketsPage() {
             icon={<TriangleAlert className="h-5 w-5 text-rose-300" />} 
             bgClass="bg-rose-600/20 border-rose-500/20 shadow-rose-900/10"
             trend="Escalated"
+            onClick={() => setStatusFilter('OPEN')}
+            isActive={statusFilter === 'OPEN'}
           />
           <StatCard 
             label="Active Fixing" 
@@ -220,6 +258,8 @@ function IncidentTicketsPage() {
             icon={<Clock className="h-5 w-5 text-amber-300" />} 
             bgClass="bg-amber-600/20 border-amber-500/20 shadow-amber-900/10"
             trend="Priority"
+            onClick={() => setStatusFilter('IN_PROGRESS')}
+            isActive={statusFilter === 'IN_PROGRESS'}
           />
           <StatCard 
             label="Resolved" 
@@ -227,6 +267,8 @@ function IncidentTicketsPage() {
             icon={<CircleCheck className="h-5 w-5 text-emerald-300" />} 
             bgClass="bg-emerald-600/20 border-emerald-500/20 shadow-emerald-900/10"
             trend="+12% Match"
+            onClick={() => setStatusFilter('RESOLVED')}
+            isActive={statusFilter === 'RESOLVED'}
           />
         </div>
       </div>
@@ -253,11 +295,49 @@ function IncidentTicketsPage() {
                  onChange={(e) => setSearchTerm(e.target.value)}
               />
            </div>
-           <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 text-sm font-bold shadow-sm hover:bg-slate-50 transition-all">
-                <Filter className="w-4 h-4" /> Filters
-              </button>
-              <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 text-sm font-bold shadow-sm hover:bg-slate-50 transition-all border-dashed">
+           <div className="flex flex-wrap items-center gap-3">
+              <select 
+                className="px-4 py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 text-sm font-bold shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="ALL">All Statuses</option>
+                {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+
+              <select 
+                className="px-4 py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 text-sm font-bold shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer"
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+              >
+                <option value="ALL">All Priorities</option>
+                {priorities.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+
+              <select 
+                className="px-4 py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 text-sm font-bold shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="ALL">All Categories</option>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+
+              {(statusFilter !== 'ALL' || priorityFilter !== 'ALL' || categoryFilter !== 'ALL' || searchTerm) && (
+                <button 
+                  onClick={() => {
+                    setStatusFilter('ALL');
+                    setPriorityFilter('ALL');
+                    setCategoryFilter('ALL');
+                    setSearchTerm('');
+                  }}
+                  className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-sm font-bold shadow-sm hover:bg-rose-100 transition-all"
+                >
+                  <X className="w-4 h-4" /> Clear Filters
+                </button>
+              )}
+
+              <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 text-sm font-bold shadow-sm hover:bg-indigo-100 transition-all border-dashed">
                 <Users className="w-4 h-4" /> {role?.toUpperCase()} VIEW
               </button>
            </div>

@@ -3,6 +3,7 @@ package com.lms.assessment.dto.ticket;
 import com.lms.assessment.model.ticket.Priority;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,7 +42,9 @@ public class CreateTicketRequest {
     @NotNull(message = "Priority is required")
     private Priority priority;
 
-    @Size(max = 2000, message = "Contact details must be at most 2000 characters")
+    @NotBlank(message = "Contact details are required")
+    @Pattern(regexp = "^\\+?\\d{10,15}$", message = "Invalid phone number format. Please provide 10-15 digits.")
+    @Size(max = 20, message = "Contact details must be at most 20 characters")
     private String contactDetails;
 
     @Size(max = 2000, message = "Legacy preferred contact must be at most 2000 characters")
