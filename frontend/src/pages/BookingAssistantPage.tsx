@@ -13,7 +13,7 @@ interface Message {
 const WELCOME: Message = {
   id: 0,
   role: 'bot',
-  text: 'Hi! I\'m your Smart Booking Assistant 🎓\n\nTell me what you need — for example:\n• "I want a lab for 2 hours"\n• "Find a lecture hall for 3 hours tomorrow"\n• "Need a study hall in Main Building for 1 hour"\n\nI\'ll suggest the best available spots near you!',
+  text: 'Hi! I\'m your Smart Booking Assistant 🎓\n\nI know every hall and lab across both buildings:\n• Main Building (Blocks A & B) — 7 floors, rooms A101–B706\n• New Building  (Blocks F & G) — 14 floors, rooms F101–G1408\n\nTry asking me:\n• "I need a lab for 2 hours tomorrow"\n• "Find a lecture hall in Block A, Floor 3 for 3 hours"\n• "Book a hall in the New Building for 50 people"\n• "I want a lab in Block F on Floor 5 for 1 hour"\n\nJust tell me what you need and I\'ll find the best available spot!',
 };
 
 export default function BookingAssistantPage() {
@@ -94,9 +94,15 @@ export default function BookingAssistantPage() {
             <h1 className="text-2xl font-black tracking-tighter">Smart Booking Assistant</h1>
             <p className="text-indigo-200 text-sm font-medium">AI-powered campus resource finder</p>
           </div>
-          <div className="ml-auto flex gap-2">
-            {['Main Building (A/B)', 'New Building (F/G)'].map(b => (
-              <span key={b} className="text-xs font-bold bg-white/15 px-3 py-1.5 rounded-full">{b}</span>
+          <div className="ml-auto flex flex-wrap gap-2 justify-end">
+            {[
+              { label: 'Block A/B', sub: 'Main · 7 floors' },
+              { label: 'Block F/G', sub: 'New · 14 floors' },
+            ].map(b => (
+              <div key={b.label} className="flex flex-col items-center bg-white/15 px-3 py-1.5 rounded-xl">
+                <span className="text-xs font-bold">{b.label}</span>
+                <span className="text-[10px] text-indigo-200">{b.sub}</span>
+              </div>
             ))}
           </div>
         </div>
