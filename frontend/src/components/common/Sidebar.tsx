@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import apiClient from '../../services/apiClient';
 import { 
   LayoutGrid,
   Ticket, 
@@ -19,6 +20,20 @@ import { useAuth } from '../../contexts/AuthContext';
 
 function Sidebar() {
   const { user, role, logout } = useAuth();
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetch = async () => {
+      try {
+        const { data } = await apiClient.get<{ count: number }>('/notifications/unread-count');
+        setUnread(data.count);
+      } catch { /* not critical */ }
+    };
+    fetch();
+    const interval = setInterval(fetch, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
   
   const menuItems = [
     { icon: LayoutGrid, label: 'Dashboard', path: '/' },
@@ -81,6 +96,11 @@ function Sidebar() {
                     <item.icon className="w-5 h-5" />
                   </div>
                   <span className="text-sm font-bold tracking-tight">{item.label}</span>
+                  {item.path === '/notifications' && unread > 0 && (
+                    <span className="ml-auto bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">
+                      {unread > 9 ? '9+' : unread}
+                    </span>
+                  )}
                 </div>
                 <ChevronRight className={`w-4 h-4 transition-all duration-300 ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-40 group-hover:translate-x-0'}`} />
               </>
