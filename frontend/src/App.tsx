@@ -15,8 +15,9 @@ function App() {
       <main className="flex-1 overflow-y-auto p-8 relative">
         <Routes>
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/admin" element={<DashboardPage overrideRole="ADMIN" />} />
+          <Route path="/student" element={<DashboardPage overrideRole="USER" />} />
           <Route path="/tech" element={<DashboardPage overrideRole="TECHNICIAN" />} />
+          <Route path="/admin" element={<DashboardPage overrideRole="ADMIN" />} />
           <Route path="/users" element={<UserManagementPage />} />
           <Route path="/tickets" element={<IncidentTicketsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />

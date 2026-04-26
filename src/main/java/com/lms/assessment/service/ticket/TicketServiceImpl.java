@@ -139,10 +139,8 @@ public class TicketServiceImpl implements TicketService {
             } else if (actorRole == TicketActorRole.TECHNICIAN) {
                 // Real Technicians only see their assigned tickets
                 if ("0".equals(currentUserId)) {
-                    // For Guest Simulation, show ALL assigned tickets to demonstrate the dashboard
-                    tickets = ticketRepository.findAll(sort).stream()
-                        .filter(t -> t.getAssignedTechnicianId() != null && !t.getAssignedTechnicianId().isEmpty())
-                        .collect(Collectors.toList());
+                    // For Guest Simulation, show ALL tickets so they can see the registry
+                    tickets = ticketRepository.findAll(sort);
                 } else {
                     tickets = ticketRepository.findByAssignedTechnicianId(currentUserId, sort);
                 }
@@ -430,12 +428,10 @@ public class TicketServiceImpl implements TicketService {
     public List<TicketResponse> getTicketsByTechnician(String technicianId) {
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
         List<Ticket> tickets;
-        
+
         if ("0".equals(technicianId)) {
-            // For Guest Simulation, show ALL assigned tickets to demonstrate the dashboard
-            tickets = ticketRepository.findAll(sort).stream()
-                .filter(t -> t.getAssignedTechnicianId() != null && !t.getAssignedTechnicianId().isEmpty())
-                .collect(Collectors.toList());
+            // For Guest Simulation, show ALL tickets
+            tickets = ticketRepository.findAll(sort);
         } else {
             tickets = ticketRepository.findByAssignedTechnicianId(technicianId, sort);
         }
@@ -650,14 +646,20 @@ public class TicketServiceImpl implements TicketService {
         }
 
         String techName = null;
+        String techSpecialty = null;
         if (ticket.getAssignedTechnicianId() != null) {
-            techName = userRepository.findById(ticket.getAssignedTechnicianId())
-                    .map(User::getUsername)
-                    .orElse("Expert #" + ticket.getAssignedTechnicianId());
+            User tech = userRepository.findById(ticket.getAssignedTechnicianId()).orElse(null);
+            if (tech != null) {
+                techName = tech.getUsername();
+                techSpecialty = tech.getSpecialty();
+            } else {
+                techName = "Expert #" + ticket.getAssignedTechnicianId();
+            }
 
             // Special case for guest system
             if ("0".equals(ticket.getAssignedTechnicianId())) {
                 techName = "Guest System";
+                techSpecialty = "All-In-One Support";
             }
         }
 
@@ -674,6 +676,7 @@ public class TicketServiceImpl implements TicketService {
                 .reporterUserId(ticket.getReporterUserId())
                 .assignedTechnicianId(ticket.getAssignedTechnicianId())
                 .assignedTechnicianName(techName)
+                .assignedTechnicianSpecialty(techSpecialty)
                 .resolutionNotes(ticket.getResolutionNotes())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())

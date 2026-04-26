@@ -32,6 +32,28 @@ public class UserService {
         if (!userRepository.existsByUsername("user")) {
             registerUser("user", "user123", "resident@campus.com", User.Role.USER);
         }
+
+        // Seed Official Technician Registry
+        seedTechnician("TECH-101", "Saman Kumara", "saman@campus.com", "Electrical & Power");
+        seedTechnician("TECH-102", "Sunil Perera", "sunil@campus.com", "Plumbing & Piping");
+        seedTechnician("TECH-103", "Kamal Silva", "kamal@campus.com", "IT & Network Support");
+        seedTechnician("TECH-104", "Nimal Sirisena", "nimal@campus.com", "HVAC & Air Conditioning");
+        seedTechnician("TECH-105", "Aruni Jayawardena", "aruni@campus.com", "Civil & Structural");
+        seedTechnician("TECH-106", "Kasun Bandara", "kasun@campus.com", "Furniture & Carpentry");
+        seedTechnician("TECH-107", "Sajeewa Perera", "sajeewa@campus.com", "Security & Surveillance");
+    }
+
+    private void seedTechnician(String id, String username, String email, String specialty) {
+        if (!userRepository.existsById(id)) {
+            User tech = new User();
+            tech.setId(id);
+            tech.setUsername(username);
+            tech.setPassword(passwordEncoder.encode("tech123"));
+            tech.setEmail(email);
+            tech.setRole(User.Role.TECHNICIAN);
+            tech.setSpecialty(specialty);
+            userRepository.save(tech);
+        }
     }
 
     public User registerUser(String username, String password, String email, User.Role role) {

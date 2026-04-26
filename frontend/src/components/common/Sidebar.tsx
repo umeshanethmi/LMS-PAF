@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
+import {
   LayoutGrid,
-  Ticket, 
-  Settings, 
-  User, 
+  Ticket,
+  Settings,
+  User,
   Bell,
   ChevronRight,
   ShieldCheck,
@@ -17,20 +17,21 @@ import { useAuth } from '../../contexts/AuthContext';
 
 function Sidebar() {
   const { user, role, logout } = useAuth();
-  
+
   const menuItems = [
-    { icon: LayoutGrid, label: 'Dashboard', path: '/' },
+    { icon: LayoutGrid, label: 'Main Dashboard', path: '/' },
     { 
       icon: Inbox, 
-      label: role === 'ADMIN' ? 'Manage Incidents' : role === 'TECHNICIAN' ? 'Assigned Tasks' : 'Student Tickets', 
+      label: role === 'ADMIN' ? 'Admin Portal' : role === 'TECHNICIAN' ? 'Tech Portal' : 'Student Portal', 
+      path: role === 'ADMIN' ? '/admin' : role === 'TECHNICIAN' ? '/tech' : '/student' 
+    },
+    { 
+      icon: Ticket, 
+      label: 'Incident Registry', 
       path: '/tickets' 
     },
     ...(role === 'ADMIN' ? [
-      { icon: User, label: 'User Management', path: '/users' },
-      { icon: Briefcase, label: 'Admin View', path: '/admin' }
-    ] : []),
-    ...(role === 'TECHNICIAN' ? [
-      { icon: Briefcase, label: 'Tech Hub', path: '/tech' }
+      { icon: User, label: 'User Management', path: '/users' }
     ] : []),
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'My Profile', path: '/profile' },
@@ -40,12 +41,12 @@ function Sidebar() {
   return (
     <div className="w-80 h-screen bg-slate-900 text-white flex flex-col overflow-hidden relative border-r border-white/5 shrink-0 shadow-2xl">
       <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 blur-3xl rounded-full -mr-16 -mt-16"></div>
-      
+
       {/* Brand Section */}
       <div className="p-8">
         <div className="flex items-center gap-3 group cursor-pointer">
           <div className="h-10 w-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-600/30 transition-transform group-hover:scale-110 group-active:scale-95 duration-300">
-             <ShieldCheck className="w-6 h-6 text-white" />
+            <ShieldCheck className="w-6 h-6 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-black tracking-tighter text-white">CampusHub</h1>
@@ -57,13 +58,13 @@ function Sidebar() {
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-4 space-y-1.5 py-6 custom-scrollbar">
         {menuItems.map((item) => (
-          <NavLink 
-            key={item.path} 
-            to={item.path} 
+          <NavLink
+            key={item.path}
+            to={item.path}
             className={({ isActive }) => `
               group relative flex items-center justify-between px-4 py-4 rounded-2xl transition-all duration-300
-              ${isActive 
-                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-900/40' 
+              ${isActive
+                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-900/40'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'}
             `}
           >
@@ -94,7 +95,7 @@ function Sidebar() {
             <p className="text-xs font-black truncate text-slate-200">{user?.username || 'Guest System'}</p>
             <p className="text-[9px] text-slate-400 truncate uppercase font-black tracking-widest mt-0.5">{role || 'Unassigned'}</p>
           </div>
-          <button 
+          <button
             onClick={logout}
             className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
             title="Logout"

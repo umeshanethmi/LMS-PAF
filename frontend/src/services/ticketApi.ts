@@ -121,3 +121,30 @@ export async function getTechnicians() {
   const res = await apiClient.get('/users/technicians');
   return res.data;
 }
+
+// UniOps V1 Endpoints
+export async function getAssignedTasks(techId: string): Promise<Ticket[]> {
+  const res = await apiClient.get<Ticket[]>(`/v1/tickets/technician/${techId}`);
+  return res.data;
+}
+
+export async function dispatchTicket(ticketId: string, technicianId: string, requestingUserId: string): Promise<Ticket> {
+  const res = await apiClient.put<Ticket>(`/v1/tickets/${ticketId}/dispatch`, null, {
+    params: { technicianId, requestingUserId }
+  });
+  return res.data;
+}
+
+export async function resolveTicket(ticketId: string, technicianId: string, notes: string): Promise<Ticket> {
+  const res = await apiClient.patch<Ticket>(`/v1/tickets/${ticketId}/resolve`, null, {
+    params: { technicianId, notes }
+  });
+  return res.data;
+}
+
+export async function submitFeedback(ticketId: string, rating: number, comment: string, studentId: string): Promise<Ticket> {
+  const res = await apiClient.post<Ticket>(`/v1/tickets/${ticketId}/feedback`, null, {
+    params: { rating, comment, studentId }
+  });
+  return res.data;
+}

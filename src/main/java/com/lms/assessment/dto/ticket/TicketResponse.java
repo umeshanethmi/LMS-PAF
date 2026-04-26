@@ -27,6 +27,7 @@ public class TicketResponse {
     private String preferredContact;
     private String assignedTechnicianId;
     private String assignedTechnicianName;
+    private String assignedTechnicianSpecialty;
     private String reporterUserId;
     private String resolutionNotes;
     private LocalDateTime createdAt;

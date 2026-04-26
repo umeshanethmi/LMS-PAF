@@ -18,7 +18,7 @@ import {
 import TicketCreateForm from '../../components/tickets/TicketCreateForm';
 import TicketList from '../../components/tickets/TicketList';
 import TicketDetailView from '../../components/tickets/TicketDetailView';
-import { getAllTickets, assignTechnician, getTicketById, deleteTicket } from '../../services/ticketApi';
+import { getAllTickets, assignTechnician, getTicketById, deleteTicket, getAssignedTasks } from '../../services/ticketApi';
 import type { Ticket, TicketRole } from '../../services/ticketApi';
 import { useAuth } from '../../contexts/AuthContext';
 import AssignTechnicianModal from '../../components/tickets/AssignTechnicianModal';
@@ -89,7 +89,15 @@ function IncidentTicketsPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAllTickets(currentUserId, apiRole);
+      let data;
+      
+      if (isTechnician) {
+        // Use specialized V1 endpoint for technicians to ensure correct filtering
+        data = await getAssignedTasks(currentUserId);
+      } else {
+        data = await getAllTickets(currentUserId, apiRole);
+      }
+      
       const ticketsArray = Array.isArray(data) ? data : [];
       setTickets(ticketsArray);
       
@@ -174,12 +182,13 @@ function IncidentTicketsPage() {
   }, [tickets, role, searchTerm, currentUserId, statusFilter, priorityFilter, categoryFilter]);
 
   const summary = useMemo(() => {
-    const open = tickets.filter((t) => t.status === 'OPEN').length;
+    // For Technicians, 'Pending' means ASSIGNED to them
+    const open = tickets.filter((t) => t.status === (isTechnician ? 'ASSIGNED' : 'OPEN')).length;
     const inProgress = tickets.filter((t) => t.status === 'IN_PROGRESS').length;
     const resolved = tickets.filter((t) => t.status === 'RESOLVED').length;
     const rejected = tickets.filter((t) => t.status === 'REJECTED').length;
     return { open, inProgress, resolved, rejected, total: tickets.length };
-  }, [tickets]);
+  }, [tickets, isTechnician]);
 
   const handleAssignSuccess = () => {
     setAssigningTicket(null);
@@ -239,13 +248,13 @@ function IncidentTicketsPage() {
             isActive={statusFilter === 'ALL'}
           />
           <StatCard 
-            label="Pending Work" 
+            label={isTechnician ? "Pending My Action" : "Pending Work"}
             value={summary.open} 
             icon={<TriangleAlert className="h-5 w-5 text-rose-300" />} 
             bgClass="bg-rose-600/20 border-rose-500/20 shadow-rose-900/10"
-            trend="Escalated"
-            onClick={() => setStatusFilter('OPEN')}
-            isActive={statusFilter === 'OPEN'}
+            trend={isTechnician ? "Assigned" : "Escalated"}
+            onClick={() => setStatusFilter(isTechnician ? 'ASSIGNED' : 'OPEN')}
+            isActive={statusFilter === (isTechnician ? 'ASSIGNED' : 'OPEN')}
           />
           <StatCard 
             label="Active Fixing" 

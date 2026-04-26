@@ -26,6 +26,8 @@ public class User {
 
     private Role role;
 
+    private String specialty;
+
     public enum Role {
         ADMIN, USER, TECHNICIAN
     }
