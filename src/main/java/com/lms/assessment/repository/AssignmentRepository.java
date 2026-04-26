@@ -1,0 +1,14 @@
+package com.lms.assessment.repository;
+
+import com.lms.assessment.model.Assignment;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface AssignmentRepository extends MongoRepository<Assignment, String> {
+    List<Assignment> findByCourseId(String courseId);
+    List<Assignment> findByCourseIdAndPublishedTrue(String courseId);
+    List<Assignment> findByCreatedByInstructorId(String instructorId);
+}

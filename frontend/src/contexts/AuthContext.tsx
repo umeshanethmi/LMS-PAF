@@ -1,80 +1,92 @@
-import { createContext, useState, useContext, useEffect } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import apiClient from '../services/apiClient';
 
-type UserRole = 'USER' | 'ADMIN' | 'TECHNICIAN' | null;
+export type BackendRole =
+  | 'SUPERADMIN'
+  | 'ADMIN'
+  | 'INSTRUCTOR'
+  | 'STUDENT'
+  | 'TECHNICIAN'
+  | 'USER';
 
-interface User {
+export type UserRole = 'instructor' | 'student' | null;
+
+export interface AuthUser {
   id: string;
   username: string;
   email: string;
-  role: UserRole;
-  token?: string;
+  role: BackendRole;
 }
 
-interface AuthContextType {
-  user: User | null;
+interface AuthState {
+  user: AuthUser | null;
+  token: string | null;
   role: UserRole;
-  isAuthenticated: boolean;
-  login: (username: string, password: String) => Promise<boolean>;
+  login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
-  setSimulationRole: (role: UserRole) => void;
+  loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthState | undefined>(undefined);
+
+const STORAGE_KEY = 'lms.auth';
+
+const INSTRUCTOR_ROLES: BackendRole[] = ['SUPERADMIN', 'ADMIN', 'INSTRUCTOR', 'TECHNICIAN'];
+
+function uiRoleFor(backend: BackendRole | undefined | null): UserRole {
+  if (!backend) return null;
+  return INSTRUCTOR_ROLES.includes(backend) ? 'instructor' : 'student';
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [simulationRole, setSimulationRole] = useState<UserRole>(null);
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const savedUser = localStorage.getItem('user');
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch (e) {
-      console.error('Failed to parse user from local storage:', e);
-      localStorage.removeItem('user');
-      return null;
-    }
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = async (username: string, password: String) => {
-    try {
-      const response = await apiClient.post<User>('/auth/login', { username, password });
-      const userData = response.data;
-      
-      // Update role format to lowercase for frontend consistency
-      const formattedUser = {
-        ...userData,
-        role: userData.role?.toUpperCase() as UserRole
-      };
-      
-      setUser(formattedUser);
-      localStorage.setItem('user', JSON.stringify(formattedUser));
-      if (formattedUser.token) {
-        localStorage.setItem('token', formattedUser.token);
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as { user: AuthUser; token: string };
+        setUser(parsed.user);
+        setToken(parsed.token);
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
       }
-      return true;
-    } catch (error) {
-      console.error('Login failed:', error);
-      return false;
     }
+    setLoading(false);
+  }, []);
+
+  const login = async (identifier: string, password: string) => {
+    const res = await apiClient.post<{
+      id: string;
+      username: string;
+      email: string;
+      role: BackendRole;
+      token: string;
+    }>('/auth/login', { username: identifier, password });
+
+    const next: AuthUser = {
+      id: res.data.id,
+      username: res.data.username,
+      email: res.data.email,
+      role: res.data.role,
+    };
+    setUser(next);
+    setToken(res.data.token);
+    localStorage.setItem('token', res.data.token);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: next, token: res.data.token }));
   };
 
   const logout = () => {
     setUser(null);
-    setSimulationRole(null);
-    localStorage.removeItem('user');
+    setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem(STORAGE_KEY);
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      role: simulationRole || user?.role || null, 
-      isAuthenticated: !!user, 
-      login, 
-      logout,
-      setSimulationRole
-    }}>
+    <AuthContext.Provider value={{ user, token, role: uiRoleFor(user?.role), login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
