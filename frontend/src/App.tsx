@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/common/Sidebar';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
@@ -6,9 +6,25 @@ import IncidentTicketsPage from './pages/maintenance/IncidentTicketsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import './App.css';
 
-function App() {
+const AUTH_ROUTES = ['/login', '/register'];
+
+function AppShell() {
+  const location = useLocation();
+  const isAuthRoute = AUTH_ROUTES.includes(location.pathname);
+
+  if (isAuthRoute) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Routes>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-inter">
       <Sidebar />
@@ -27,6 +43,10 @@ function App() {
       </main>
     </div>
   );
+}
+
+function App() {
+  return <AppShell />;
 }
 
 export default App;
