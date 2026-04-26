@@ -1,13 +1,13 @@
 package com.lms.assessment.model.ticket;
 
-import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "ticket_attachments")
+@Document(collection = "ticket_attachments")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,19 +15,14 @@ import java.time.LocalDateTime;
 public class TicketAttachment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ticket_id", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Ticket ticket;
+    @Indexed
+    private String ticketId;
 
-    @Column(nullable = false)
+    private String filePath;
+
     private String imagePath;
 
-    @CreationTimestamp
-    @Column(updatable = false)
     private LocalDateTime createdAt;
 }

@@ -16,9 +16,8 @@ import java.util.List;
 @AllArgsConstructor
 public class TicketResponse {
 
-    private Long id;
-    private String resourceId;
-    private String title;
+    private String id;
+    private String email;
     private String location;
     private String category;
     private String description;
@@ -27,6 +26,8 @@ public class TicketResponse {
     private String contactDetails;
     private String preferredContact;
     private String assignedTechnicianId;
+    private String assignedTechnicianName;
+    private String reporterUserId;
     private String resolutionNotes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -17,12 +17,14 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateTicketRequest {
+    
+    @NotNull(message = "User ID is required")
+    private String currentUserId;
 
-    @Size(max = 255, message = "Resource ID must be at most 255 characters")
-    private String resourceId;
-
-    @Size(max = 255, message = "Legacy title must be at most 255 characters")
-    private String title;
+    @NotBlank(message = "Email address is required")
+    @jakarta.validation.constraints.Email(message = "Invalid email format")
+    @Size(max = 255, message = "Email must be at most 255 characters")
+    private String email;
 
     @NotBlank(message = "Location is required")
     @Size(max = 255, message = "Location must be at most 255 characters")
@@ -49,5 +51,6 @@ public class CreateTicketRequest {
     private List<@Size(max = 1000, message = "Attachment path must be at most 1000 characters") String> attachmentPaths;
 
     // Optional multipart upload support for client compatibility.
+    @Size(max = 3, message = "A maximum of 3 files is allowed")
     private List<MultipartFile> files;
 }

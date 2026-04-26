@@ -13,10 +13,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TicketCommentResponse {
 
-    private Long id;
-    private Long ticketId;
-    private Long userId;
-    private Long authorUserId;
+    private String id;
+    private String ticketId;
+    private String userId;
+    private String authorUserId;
+    private String author;
+    private String authorRole;
     private String content;
     private LocalDateTime timestamp;
     private LocalDateTime createdAt;
