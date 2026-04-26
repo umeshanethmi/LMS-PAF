@@ -28,6 +28,7 @@ import {
   deleteTicket,
   updateTicket
 } from '../../services/ticketApi';
+import AssignTechnicianModal from './AssignTechnicianModal';
 import type { Ticket, TicketRole, TicketStatus } from '../../services/ticketApi';
 import CommentBubble from './CommentBubble';
 
@@ -55,6 +56,7 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [technicianList, setTechnicianList] = useState<{id: string, username: string}[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [editData, setEditData] = useState({
     category: ticket.category,
     priority: ticket.priority,
@@ -112,20 +114,11 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
     }
   };
 
-  const handleAssign = async () => {
-    if (!techId.trim()) return;
-    setUpdating(true);
-    try {
-      const updated = await assignTechnician(ticket.id, techId, currentUserId, role);
-      setTicket(updated);
-      alert('Technician assigned successfully');
-      setTechId('');
-      onUpdated();
-    } catch (error: any) {
-      alert('Failed to assign technician: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setUpdating(false);
-    }
+  const handleAssignSuccess = async () => {
+    setIsAssignModalOpen(false);
+    const updatedTicket = await getTicketById(ticket.id);
+    setTicket(updatedTicket);
+    onUpdated();
   };
 
   const handleStatusChange = async (newStatus: TicketStatus, resolutionNotes?: string) => {
@@ -359,33 +352,30 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
                   <h3 className="text-lg font-black mb-6 flex items-center gap-2 uppercase tracking-tight">
                     <ShieldCheck className="w-6 h-6 text-indigo-400" /> Admin Command Hub
                   </h3>
-                  <div className="flex flex-col md:flex-row gap-4 mb-4">
-                    <div className="flex-1 relative">
-                      <select 
-                        value={techId}
-                        onChange={(e) => setTechId(e.target.value)}
-                        className="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:outline-none focus:border-indigo-500 transition-all appearance-none cursor-pointer"
-                      >
-                        <option value="" disabled>Deploy Expert...</option>
-                        {technicianList.map(t => (
-                          <option key={t.id} value={t.id}>{t.username}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <button 
-                      onClick={handleAssign}
-                      disabled={updating || !techId}
-                      className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white font-black px-10 py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 uppercase text-xs tracking-widest"
-                    >
-                      {updating ? <Clock className="animate-spin w-4 h-4" /> : <><Zap className="w-4 h-4" /> Assign</>}
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => setIsAssignModalOpen(true)}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black px-10 py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 uppercase text-xs tracking-widest"
+                  >
+                    <Zap className="w-4 h-4" /> Deploy Expert
+                  </button>
                   <button 
                     onClick={() => setShowRejectForm(true)}
-                    className="w-full bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 font-bold py-4 rounded-2xl transition-all border border-white/5 hover:border-rose-500/30 text-xs uppercase tracking-widest"
+                    className="w-full mt-4 bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 font-bold py-4 rounded-2xl transition-all border border-white/5 hover:border-rose-500/30 text-xs uppercase tracking-widest"
                   >
                     Reject Application
                   </button>
+                  
+                  {isAssignModalOpen && (
+                    <AssignTechnicianModal
+                      ticketId={ticket.id}
+                      ticketCategory={ticket.category}
+                      ticketLocation={ticket.location}
+                      currentUserId={currentUserId}
+                      role={role}
+                      onClose={() => setIsAssignModalOpen(false)}
+                      onAssign={handleAssignSuccess}
+                    />
+                  )}
                 </motion.div>
               )}
 

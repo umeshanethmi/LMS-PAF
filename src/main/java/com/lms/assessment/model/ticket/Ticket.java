@@ -52,4 +52,14 @@ public class Ticket {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+    
+    private LocalDateTime dispatchedAt;
+    
+    private LocalDateTime resolvedAt;
+    
+    private LocalDateTime closedAt;
+    
+    private Integer rating;
+    
+    private String feedbackComment;
 }

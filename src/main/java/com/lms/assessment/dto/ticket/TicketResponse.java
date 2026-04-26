@@ -31,6 +31,11 @@ public class TicketResponse {
     private String resolutionNotes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime dispatchedAt;
+    private LocalDateTime resolvedAt;
+    private LocalDateTime closedAt;
+    private Integer rating;
+    private String feedbackComment;
 
     private List<TicketAttachmentResponse> attachments;
     private List<TicketCommentResponse> comments;

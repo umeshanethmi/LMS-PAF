@@ -1,6 +1,7 @@
 package com.lms.assessment.service.ticket;
 
 import com.lms.assessment.dto.ticket.*;
+import lombok.extern.slf4j.Slf4j;
 import com.lms.assessment.exception.ForbiddenOperationException;
 import com.lms.assessment.exception.ResourceNotFoundException;
 import com.lms.assessment.exception.SubmissionException;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@Slf4j
 public class TicketServiceImpl implements TicketService {
 
     private static final String TICKET_UPLOAD_SUBDIR = "tickets";
@@ -122,13 +124,26 @@ public class TicketServiceImpl implements TicketService {
 
         if (actorRole == TicketActorRole.ADMIN) {
             tickets = ticketRepository.findAll(sort);
-        } else if (actorRole == TicketActorRole.TECHNICIAN) {
-            tickets = ticketRepository.findByAssignedTechnicianId(currentUserId, sort);
         } else {
-            if (currentUserId == null || currentUserId.isBlank()) {
-                return new java.util.ArrayList<>();
+            // Check the authentic role of the user in the database
+            User currentUser = null;
+            if (currentUserId != null && !currentUserId.isBlank() && !"0".equals(currentUserId)) {
+                currentUser = userRepository.findById(currentUserId).orElse(null);
             }
-            tickets = ticketRepository.findByReporterUserId(currentUserId, sort);
+
+            // If the authentic user is an ADMIN, they should see everything even when simulating
+            if (currentUser != null && currentUser.getRole() == User.Role.ADMIN) {
+                tickets = ticketRepository.findAll(sort);
+            } else if (actorRole == TicketActorRole.TECHNICIAN) {
+                // Real Technicians only see their assigned tickets
+                tickets = ticketRepository.findByAssignedTechnicianId(currentUserId, sort);
+            } else {
+                // Real Users only see their reported tickets
+                if (currentUserId == null || currentUserId.isBlank()) {
+                    return new java.util.ArrayList<>();
+                }
+                tickets = ticketRepository.findByReporterUserId(currentUserId, sort);
+            }
         }
 
         return tickets.stream()
@@ -240,6 +255,92 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    public TicketResponse dispatchTicket(String ticketId, String technicianId, String requestingUserId) {
+        // 1. Validation Logic
+        User adminUser = userRepository.findById(requestingUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", requestingUserId));
+        
+        if (adminUser.getRole() != User.Role.ADMIN) {
+            throw new ForbiddenOperationException("Access Denied: Only administrators can dispatch tickets.");
+        }
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+
+        // 2. Data Update
+        ticket.setAssignedTechnicianId(technicianId);
+        ticket.setStatus(TicketStatus.IN_PROGRESS);
+        ticket.setDispatchedAt(LocalDateTime.now());
+        ticket.setUpdatedAt(LocalDateTime.now());
+
+        Ticket saved = ticketRepository.save(ticket);
+
+        // 3. Email Notification to Technician
+        User tech = userRepository.findById(technicianId).orElse(null);
+        if (tech != null && tech.getEmail() != null) {
+            try {
+                String subject = "New Mission Assigned: Ticket #" + ticket.getId();
+                String body = "<h3>New Assignment Received</h3>" +
+                             "<p>Hello " + tech.getUsername() + ",</p>" +
+                             "<p>You have been dispatched to handle a new incident.</p>" +
+                             "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
+                             "<p><b>Location:</b> " + ticket.getLocation() + "</p>" +
+                             "<p><b>Category:</b> " + ticket.getCategory() + "</p>" +
+                             "<p><b>Priority:</b> " + ticket.getPriority() + "</p>" +
+                             "<br><p>Log in to the CampusHub Tech Portal to begin work.</p>";
+                emailService.sendHtmlEmail(tech.getEmail(), subject, body);
+            } catch (Exception e) {
+                log.error("Failed to notify technician via email: {}", e.getMessage());
+            }
+        }
+
+        return mapToTicketResponse(saved, true);
+    }
+
+    @Override
+    public TicketResponse resolveTicket(String ticketId, String technicianId, String notes) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+
+        if (!Objects.equals(ticket.getAssignedTechnicianId(), technicianId)) {
+            throw new ForbiddenOperationException("Only the assigned technician can resolve this ticket.");
+        }
+
+        if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
+            throw new SubmissionException("Only tickets currently IN_PROGRESS can be resolved.");
+        }
+
+        ticket.setStatus(TicketStatus.RESOLVED);
+        ticket.setResolutionNotes(notes);
+        ticket.setResolvedAt(LocalDateTime.now());
+        ticket.setUpdatedAt(LocalDateTime.now());
+
+        return mapToTicketResponse(ticketRepository.save(ticket), true);
+    }
+
+    @Override
+    public TicketResponse submitFeedback(String ticketId, Integer rating, String comment, String studentId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+
+        if (!Objects.equals(ticket.getReporterUserId(), studentId)) {
+            throw new ForbiddenOperationException("Only the original reporter can provide feedback.");
+        }
+
+        if (ticket.getStatus() != TicketStatus.RESOLVED) {
+            throw new SubmissionException("Feedback can only be provided for RESOLVED tickets.");
+        }
+
+        ticket.setRating(rating);
+        ticket.setFeedbackComment(comment);
+        ticket.setStatus(TicketStatus.CLOSED);
+        ticket.setClosedAt(LocalDateTime.now());
+        ticket.setUpdatedAt(LocalDateTime.now());
+
+        return mapToTicketResponse(ticketRepository.save(ticket), true);
+    }
+
+    @Override
     public TicketResponse updateTicketStatus(String ticketId, UpdateTicketStatusRequest request,
                                              String currentUserId, TicketActorRole actorRole) {
         requireRole(actorRole, TicketActorRole.TECHNICIAN, "Only technicians can update ticket status.");
@@ -311,6 +412,19 @@ public class TicketServiceImpl implements TicketService {
         }
 
         return mapToTicketResponse(updated, true);
+    }
+
+    @Override
+    public List<TicketResponse> getTicketsByTechnician(String technicianId) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        List<Ticket> tickets = ticketRepository.findByAssignedTechnicianId(technicianId, sort);
+        
+        // Ensure we return a clean JSON array even if empty
+        if (tickets == null) return new java.util.ArrayList<>();
+        
+        return tickets.stream()
+                .map(t -> mapToTicketResponse(t, false))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -538,6 +652,11 @@ public class TicketServiceImpl implements TicketService {
                 .resolutionNotes(ticket.getResolutionNotes())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
+                .dispatchedAt(ticket.getDispatchedAt())
+                .resolvedAt(ticket.getResolvedAt())
+                .closedAt(ticket.getClosedAt())
+                .rating(ticket.getRating())
+                .feedbackComment(ticket.getFeedbackComment())
                 .attachments(attachmentResponses)
                 .comments(commentResponses)
                 .build();

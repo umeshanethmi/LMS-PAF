@@ -21,6 +21,7 @@ import TicketDetailView from '../../components/tickets/TicketDetailView';
 import { getAllTickets, assignTechnician, getTicketById, deleteTicket } from '../../services/ticketApi';
 import type { Ticket, TicketRole } from '../../services/ticketApi';
 import { useAuth } from '../../contexts/AuthContext';
+import AssignTechnicianModal from '../../components/tickets/AssignTechnicianModal';
 
 function toApiRole(role: string | null): TicketRole {
   const upper = role?.toUpperCase();
@@ -59,9 +60,7 @@ function IncidentTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [assigningTicket, setAssigningTicket] = useState<Ticket | null>(null);
-  const [technicianId, setTechnicianId] = useState('');
   const [loading, setLoading] = useState(true);
-  const [assignLoading, setAssignLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,16 +90,19 @@ function IncidentTicketsPage() {
       setLoading(true);
       setError(null);
       const data = await getAllTickets(currentUserId, apiRole);
-      setTickets(Array.isArray(data) ? data : []);
+      const ticketsArray = Array.isArray(data) ? data : [];
+      setTickets(ticketsArray);
       
       // If a ticket was selected, refresh it
       if (selectedTicket) {
         const updated = await getTicketById(selectedTicket.id);
         setSelectedTicket(updated);
       }
+      return ticketsArray;
     } catch (error) {
       console.error('Failed to load tickets', error);
       setError('Failed to sync with maintenance systems. Please check connection.');
+      return [];
     } finally {
       setLoading(false);
     }
@@ -120,28 +122,32 @@ function IncidentTicketsPage() {
   };
 
   useEffect(() => {
-    loadTickets();
-    if (location.state && (location.state as any).openCreateModal) {
-      setShowCreateModal(true);
-      // Clear state so it doesn't reopen on refresh
-      window.history.replaceState({}, document.title);
-    }
-  }, [user]);
+    const handleNavigationState = async () => {
+      const freshTickets = await loadTickets();
+      
+      const state = location.state as any;
+      if (state) {
+        if (state.openCreateModal) {
+          setShowCreateModal(true);
+        }
+        if (state.selectedId && freshTickets.length > 0) {
+          const ticket = freshTickets.find((t: any) => t.id === state.selectedId);
+          if (ticket) {
+            setSelectedTicket(ticket);
+          }
+        }
+        // Clear state so it doesn't re-trigger on refresh
+        window.history.replaceState({}, document.title);
+      }
+    };
+    
+    handleNavigationState();
+  }, [user, location.state]); // Added location.state to dependencies
 
   const filteredTickets = useMemo(() => {
     let result = [...tickets];
     
-    // Role-based filtering handled by backend ideally, but we have frontend fail-safes
-    if (isTechnician) {
-       result = result.filter(t => 
-         t.assignedTechnicianId === currentUserId.toString() || 
-         t.assignedTechnicianId === 'TECH-' + currentUserId ||
-         (t.assignedTechnicianId && t.assignedTechnicianId.startsWith('TECH'))
-       );
-    } else if (isUser) {
-       // If backend isn't filtering for user, we can enforce it here
-       // result = result.filter(t => t.reportedBy === currentUserId);
-    }
+    // Role-based filtering handled by backend, frontend trust the synced data
 
     if (searchTerm) {
       result = result.filter(t => 
@@ -175,20 +181,9 @@ function IncidentTicketsPage() {
     return { open, inProgress, resolved, rejected, total: tickets.length };
   }, [tickets]);
 
-  const handleAssignTechnician = async () => {
-    if (!assigningTicket || !technicianId.trim()) return;
-    setAssignLoading(true);
-    try {
-      await assignTechnician(assigningTicket.id, technicianId.trim(), currentUserId, apiRole);
-      setAssigningTicket(null);
-      setTechnicianId('');
-      await loadTickets();
-    } catch (err) {
-      console.error('Failed to assign technician', err);
-      setError('Technician assignment failed. Verify Technician ID.');
-    } finally {
-      setAssignLoading(false);
-    }
+  const handleAssignSuccess = () => {
+    setAssigningTicket(null);
+    loadTickets();
   };
 
   return (
@@ -394,54 +389,15 @@ function IncidentTicketsPage() {
       )}
 
       {isAdmin && assigningTicket && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-in zoom-in-95 duration-300">
-          <div className="w-full max-w-md rounded-[2.5rem] bg-white p-8 shadow-3xl border border-slate-100">
-            <div className="flex items-center gap-4 mb-8">
-               <div className="bg-indigo-100 p-3 rounded-2xl text-indigo-600">
-                  <Users className="w-6 h-6" />
-               </div>
-               <div>
-                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">Assign Expert</h2>
-                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ticket #{assigningTicket.id}</p>
-               </div>
-            </div>
-            
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 ml-1">Qualified Technician ID</label>
-                <div className="relative">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                  <input
-                    className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 pl-12 pr-4 py-4 text-sm font-bold text-slate-700 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
-                    value={technicianId}
-                    onChange={(e) => setTechnicianId(e.target.value)}
-                    placeholder="e.g. TECH_EL_021"
-                    autoFocus
-                  />
-                </div>
-              </div>
-              
-              <div className="flex flex-col gap-3">
-                <button
-                  className="w-full rounded-2xl bg-indigo-600 py-4 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                  disabled={assignLoading || !technicianId.trim()}
-                  onClick={handleAssignTechnician}
-                >
-                  {assignLoading ? <Clock className="animate-spin w-5 h-5" /> : 'Confirm Deployment'}
-                </button>
-                <button
-                  className="w-full rounded-2xl border-2 border-slate-100 py-4 text-sm font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all"
-                  onClick={() => {
-                    setAssigningTicket(null);
-                    setTechnicianId('');
-                  }}
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AssignTechnicianModal 
+          ticketId={assigningTicket.id}
+          ticketCategory={assigningTicket.category}
+          ticketLocation={assigningTicket.location}
+          currentUserId={currentUserId}
+          role={apiRole}
+          onClose={() => setAssigningTicket(null)}
+          onAssign={handleAssignSuccess}
+        />
       )}
     </div>
   );

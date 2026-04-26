@@ -21,6 +21,14 @@ public interface TicketService {
     TicketResponse assignTechnician(String ticketId, AssignTechnicianRequest request, String currentUserId,
                                     TicketActorRole actorRole);
 
+    TicketResponse dispatchTicket(String ticketId, String technicianId, String requestingUserId);
+
+    TicketResponse resolveTicket(String ticketId, String technicianId, String notes);
+
+    TicketResponse submitFeedback(String ticketId, Integer rating, String comment, String studentId);
+
+    java.util.List<TicketResponse> getTicketsByTechnician(String technicianId);
+
     TicketResponse updateTicketStatus(String ticketId, UpdateTicketStatusRequest request,
                                       String currentUserId, TicketActorRole actorRole);
 
