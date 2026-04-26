@@ -60,7 +60,7 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid email or password");
         }
 
-        return jwtTokenProvider.generateTokenFromUsername(email);
+        return jwtTokenProvider.generateToken(user);
     }
 
     // ── User Retrieval ────────────────────────────────────────────────────────
@@ -139,6 +139,8 @@ public class AuthService {
      * @return signed JWT string
      */
     public String generateTokenForEmail(String email) {
-        return jwtTokenProvider.generateTokenFromUsername(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return jwtTokenProvider.generateToken(user);
     }
 }

@@ -33,9 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     logout();
                 } else {
                     setUser({
-                        id: decoded.sub,
-                        email: decoded.email,
-                        name: decoded.name || decoded.email,
+                        id: decoded.id || decoded.sub,
+                        email: decoded.sub,
+                        name: decoded.name || decoded.sub?.split('@')[0] || 'User',
                         role: decoded.role || 'USER',
                         picture: decoded.picture
                     });

@@ -39,25 +39,36 @@ public class JwtTokenProvider {
     // ── Token Generation ──────────────────────────────────────────────────────
 
     /**
-     * Generate a JWT token from a Spring Security {@link Authentication} object.
-     *
-     * @param authentication the successfully authenticated principal
-     * @return signed JWT string
+     * Generate a JWT token from a User object.
      */
-    public String generateToken(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return buildToken(userDetails.getUsername());
+    public String generateToken(com.smartcampus.models.User user) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + jwtExpirationMs);
+
+        return Jwts.builder()
+                .setSubject(user.getEmail())
+                .claim("id", user.getId())
+                .claim("name", user.getName())
+                .claim("role", user.getRoles().stream().findFirst().map(Enum::name).orElse("USER"))
+                .claim("picture", user.getImageUrl())
+                .claim("provider", user.getProvider())
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
     }
 
     /**
-     * Generate a JWT directly from a username (email).
-     * Used inside {@link OAuth2AuthenticationSuccessHandler}.
-     *
-     * @param username the user's email
-     * @return signed JWT string
+     * @deprecated Use generateToken(User) instead.
      */
+    @Deprecated
     public String generateTokenFromUsername(String username) {
-        return buildToken(username);
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
     }
 
     // ── Token Parsing ─────────────────────────────────────────────────────────

@@ -54,6 +54,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import NotificationPage from './pages/NotificationPage';
+import ProfilePage from './pages/ProfilePage';
 
 const AppContent = () => {
   const { user, isAuthenticated } = useAuth();
@@ -106,19 +107,23 @@ const AppContent = () => {
               )}
             </Link>
             <div className="h-8 w-px bg-slate-200"></div>
-            <div className="flex items-center gap-3">
+            <Link to="/profile" className="flex items-center gap-3 pl-2 group transition-all">
               <div className="text-right">
-                <p className="text-sm font-semibold text-slate-800">{user?.name || 'User'}</p>
-                <p className="text-xs text-slate-500">{user?.role || 'Member'}</p>
+                <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight">
+                  {user?.name?.split(' ')[0] || 'User'}
+                </p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  {user?.role || 'MEMBER'}
+                </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center border border-indigo-200 overflow-hidden">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 overflow-hidden shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all">
                 {user?.picture ? (
                   <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
                 ) : (
-                  <User className="w-5 h-5 text-indigo-600" />
+                  <User className="w-5 h-5 text-indigo-400" />
                 )}
               </div>
-            </div>
+            </Link>
           </div>
         </header>
 
@@ -129,10 +134,14 @@ const AppContent = () => {
               {/* Main Routes */}
               <Route path="/" element={<DashboardPage />} />
               
+              {/* Profile & Notifications */}
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/notifications" element={<NotificationPage />} />
+
               {/* Maintenance Ticketing Routes */}
               <Route path="/tickets" element={<IncidentTicketsPage />} />
-              <Route path="/notifications" element={<NotificationPage />} />
-              <Route path="/profile" element={<div className="p-4">User Profile Settings</div>} />
+
+              {/* Global Settings Placeholder */}
               <Route path="/settings" element={<div className="p-4">Global System Settings</div>} />
               
               {/* Catch-all fallback */}

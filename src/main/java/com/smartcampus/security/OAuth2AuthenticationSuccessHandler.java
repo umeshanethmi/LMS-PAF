@@ -46,8 +46,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
         String email = oAuth2User.getEmail();
 
-        // 2. Generate JWT
-        String token = jwtTokenProvider.generateTokenFromUsername(email);
+        // 2. Generate JWT with full user claims
+        String token = jwtTokenProvider.generateToken(oAuth2User.getUser());
         log.info("OAuth2 success – issuing JWT for: {}", email);
 
         // 3. Build redirect URL with token appended as query param
