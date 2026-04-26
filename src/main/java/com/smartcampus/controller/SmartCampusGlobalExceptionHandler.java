@@ -2,12 +2,14 @@ package com.smartcampus.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -15,14 +17,7 @@ import java.util.Map;
 
 /**
  * GlobalExceptionHandler – Centralises error responses for all REST controllers.
- *
- * Maps common exceptions to structured JSON bodies:
- * {
- *   "status":    404,
- *   "error":     "Not Found",
- *   "message":   "Notification not found: abc123",
- *   "timestamp": "2026-04-25T18:00:00Z"
- * }
+ * Unified for Smart Campus Hub and Assessment Service modules.
  */
 @Slf4j
 @RestControllerAdvice
@@ -40,9 +35,14 @@ public class SmartCampusGlobalExceptionHandler {
             fieldErrors.put(field, message);
         });
 
-        String summary = fieldErrors.values().stream().findFirst().orElse("Validation failed");
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Validation Error");
+        body.put("message", "One or more fields failed validation");
+        body.put("details", fieldErrors);
+        body.put("timestamp", Instant.now().toString());
 
-        return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed", summary);
+        return ResponseEntity.badRequest().body(body);
     }
 
     // ── 400 Bad Request – Business rule violations ─────────────────────────────
@@ -67,6 +67,36 @@ public class SmartCampusGlobalExceptionHandler {
             AccessDeniedException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, "Access Denied",
                 "You do not have permission to perform this action.");
+    }
+
+    // ── 413 Payload Too Large ────────────────────────────────────────────────
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "File Too Large", "File size exceeds the configured maximum limit.");
+    }
+
+    // ── Assessment Service Specific Exceptions (Catch by name if class not imported) ──
+    @ExceptionHandler({
+            com.lms.assessment.exception.ResourceNotFoundException.class,
+            com.lms.assessment.exception.MyFileNotFoundException.class
+    })
+    public ResponseEntity<Map<String, Object>> handleNotFound(Exception ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, "Resource Not Found", ex.getMessage());
+    }
+
+    @ExceptionHandler(com.lms.assessment.exception.SubmissionException.class)
+    public ResponseEntity<Map<String, Object>> handleSubmissionException(Exception ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Submission Error", ex.getMessage());
+    }
+
+    @ExceptionHandler(com.lms.assessment.exception.FileStorageException.class)
+    public ResponseEntity<Map<String, Object>> handleFileStorageException(Exception ex) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "File Storage Error", ex.getMessage());
+    }
+
+    @ExceptionHandler(com.lms.assessment.exception.ForbiddenOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleForbiddenOperation(Exception ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, "Forbidden Operation", ex.getMessage());
     }
 
     // ── 500 Internal Server Error – Unexpected ────────────────────────────────

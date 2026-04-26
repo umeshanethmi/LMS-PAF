@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, ShieldCheck, Zap, BellRing, Mail, Lock, Loader2 } from 'lucide-react';
+import { LogIn, ShieldCheck, Zap, BellRing, Mail, Lock, Loader2, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -178,7 +178,17 @@ const LoginPage: React.FC = () => {
                             Google
                         </button>
 
-                        <p className="mt-8 text-center text-sm text-slate-500">
+                        <div className="mt-8 pt-6 border-t border-slate-50 text-center">
+                            <Link 
+                                to="/admin-login"
+                                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Shield className="w-3 h-3" />
+                                Administrative Gateway
+                            </Link>
+                        </div>
+
+                        <p className="mt-6 text-center text-sm text-slate-500">
                             Don't have an account? <Link to="/register" className="text-indigo-600 font-bold hover:underline">Create Account</Link>
                         </p>
                     </div>

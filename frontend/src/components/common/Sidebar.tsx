@@ -1,88 +1,112 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  Ticket, 
+  LayoutGrid,
   Settings, 
-  LogOut, 
   User, 
-  Bell, 
+  Bell,
   ChevronRight,
-  HelpCircle
+  ShieldCheck,
+  Inbox,
+  Briefcase,
+  LogOut
 } from 'lucide-react';
-
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
-  const { logout, user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const { user, simulationRole, logout } = useAuth();
+  const effectiveRole = simulationRole || user?.role || 'USER';
+  const isAdmin = effectiveRole === 'ADMIN';
+  const isTechnician = effectiveRole === 'TECHNICIAN';
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Ticket, label: 'Maintenance', path: '/tickets' },
+    { icon: LayoutGrid, label: 'Dashboard', path: '/' },
+    { 
+      icon: Inbox, 
+      label: isAdmin ? 'Manage Incidents' : isTechnician ? 'Assigned Tasks' : 'Student Tickets', 
+      path: '/tickets' 
+    },
+    ...(isAdmin ? [
+      { icon: User, label: 'User Management', path: '/users' },
+      { icon: Briefcase, label: 'Admin View', path: '/admin' }
+    ] : []),
+    ...(isTechnician ? [
+      { icon: Briefcase, label: 'Tech Hub', path: '/tech' }
+    ] : []),
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
-    ...(isAdmin ? [{ icon: Settings, label: 'Settings', path: '/settings' }] : []),
+    { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ease-in-out">
-      {/* Logo Section */}
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
-          <Ticket className="text-white w-6 h-6" />
-        </div>
-        <div>
-          <h1 className="font-bold text-slate-800 text-lg leading-tight">Smart Campus</h1>
-          <p className="text-xs text-slate-400 font-medium tracking-wide">OPERATIONS HUB</p>
+    <div className="w-80 h-screen bg-slate-900 text-white flex flex-col overflow-hidden relative border-r border-white/5 shrink-0 shadow-2xl">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 blur-3xl rounded-full -mr-16 -mt-16"></div>
+      
+      {/* Brand Section */}
+      <div className="p-8">
+        <div className="flex items-center gap-3 group cursor-pointer">
+          <div className="h-10 w-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-600/30 transition-transform group-hover:scale-110 group-active:scale-95 duration-300">
+             <ShieldCheck className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black tracking-tighter text-white">CampusHub</h1>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1.5">v2.4.0 • Enterprise</p>
+          </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 mt-4 space-y-1">
+      <div className="flex-1 overflow-y-auto px-4 space-y-1.5 py-6 custom-scrollbar">
         {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
+          <NavLink 
+            key={item.path} 
+            to={item.path} 
             className={({ isActive }) => `
-              flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group
+              group relative flex items-center justify-between px-4 py-4 rounded-2xl transition-all duration-300
               ${isActive 
-                ? 'bg-indigo-50 text-indigo-600 shadow-sm' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}
+                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-900/40' 
+                : 'text-slate-400 hover:text-white hover:bg-white/5'}
             `}
           >
-            <div className="flex items-center gap-3">
-              <item.icon className={`w-5 h-5 transition-colors duration-200`} />
-              <span className="font-medium text-sm">{item.label}</span>
-            </div>
-            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            {({ isActive }) => (
+              <>
+                {!isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-indigo-600 rounded-r-full scale-0 group-hover:scale-100 transition-transform origin-left"></div>
+                )}
+                <div className="flex items-center gap-3.5 relative z-10">
+                  <div className={`p-1 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-bold tracking-tight">{item.label}</span>
+                </div>
+                <ChevronRight className={`w-4 h-4 transition-all duration-300 ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-40 group-hover:translate-x-0'}`} />
+              </>
+            )}
           </NavLink>
         ))}
-      </nav>
+      </div>
 
-      {/* Bottom Section */}
-      <div className="p-4 mt-auto border-t border-slate-100">
-        <div className="bg-slate-50 rounded-2xl p-4 mb-4">
-          <div className="flex items-center gap-3 mb-3">
-            <HelpCircle className="w-5 h-5 text-indigo-500" />
-            <span className="text-sm font-semibold text-slate-700">Need help?</span>
+      {/* User Info & Logout */}
+      <div className="p-6 border-t border-white/5 bg-white/5 rounded-3xl m-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-white shadow-lg border border-white/20">
+            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
           </div>
-          <p className="text-xs text-slate-500 mb-3">Check our documentation or contact support.</p>
-          <button className="w-full py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
-            Support Center
-          </button>
+          <div className="flex-1 overflow-hidden">
+            <p className="text-xs font-black truncate text-slate-200">{user?.name || user?.email?.split('@')[0] || 'Member'}</p>
+            <p className="text-[9px] text-slate-400 truncate uppercase font-black tracking-widest mt-0.5">{effectiveRole}</p>
+          </div>
         </div>
-
+        
         <button 
           onClick={logout}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 group"
+          className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300 group"
         >
-          <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-          <span className="font-medium text-sm">Logout</span>
+          <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+          <span className="font-bold text-xs">Logout Session</span>
         </button>
       </div>
-    </aside>
+    </div>
   );
-};
+}
 
 export default Sidebar;

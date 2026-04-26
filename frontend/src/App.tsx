@@ -3,11 +3,10 @@ import { useLocation, Navigate, Route, Routes, Link } from 'react-router-dom';
 import './App.css';
 import IncidentTicketsPage from './pages/maintenance/IncidentTicketsPage';
 import DashboardPage from './pages/DashboardPage';
+import UserManagementPage from './pages/admin/UserManagementPage';
 import type { ErrorInfo, ReactNode } from 'react';
 import Sidebar from './components/common/Sidebar';
 import { Bell, Search, User } from 'lucide-react';
-
-
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -134,6 +133,9 @@ const AppContent = () => {
             <Routes>
               {/* Main Routes */}
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/admin" element={<DashboardPage overrideRole="ADMIN" />} />
+              <Route path="/tech" element={<DashboardPage overrideRole="TECHNICIAN" />} />
+              <Route path="/users" element={<UserManagementPage />} />
               
               {/* Profile & Notifications */}
               <Route path="/profile" element={<ProfilePage />} />
@@ -166,4 +168,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;
