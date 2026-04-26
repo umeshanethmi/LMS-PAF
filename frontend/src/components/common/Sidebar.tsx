@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import apiClient from '../../services/apiClient';
 import { 
   LayoutGrid,
@@ -20,6 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 function Sidebar() {
   const { user, role, logout } = useAuth();
+  const navigate = useNavigate();
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
@@ -119,7 +120,7 @@ function Sidebar() {
             <p className="text-[9px] text-slate-400 truncate uppercase font-black tracking-widest mt-0.5">{role || 'Unassigned'}</p>
           </div>
           <button 
-            onClick={logout}
+            onClick={() => { logout(); navigate('/login'); }}
             className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
             title="Logout"
           >

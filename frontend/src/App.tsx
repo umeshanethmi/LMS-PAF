@@ -10,12 +10,14 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import BookingAssistantPage from './pages/BookingAssistantPage';
 import MyBookingsPage from './pages/MyBookingsPage';
+import { useAuth } from './contexts/AuthContext';
 import './App.css';
 
 const AUTH_ROUTES = ['/login', '/register'];
 
 function AppShell() {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const isAuthRoute = AUTH_ROUTES.includes(location.pathname);
 
   if (isAuthRoute) {
@@ -25,6 +27,10 @@ function AppShell() {
         <Route path="/register" element={<RegisterPage />} />
       </Routes>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
   return (
