@@ -4,6 +4,7 @@ import './App.css';
 import IncidentTicketsPage from './pages/maintenance/IncidentTicketsPage';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
+import ManageResourcesPage from './pages/admin/ManageResourcesPage';
 import BookingAssistantPage from './pages/BookingAssistantPage';
 import MyBookingsPage from './pages/MyBookingsPage';
 import type { ErrorInfo, ReactNode } from 'react';
@@ -137,7 +138,8 @@ const AppContent = () => {
               <Route path="/admin" element={<DashboardPage overrideRole="ADMIN" />} />
               <Route path="/tech" element={<DashboardPage overrideRole="TECHNICIAN" />} />
               <Route path="/users" element={<UserManagementPage />} />
-              
+              <Route path="/admin/resources" element={<ManageResourcesPage />} />
+
               {/* Booking System */}
               <Route path="/book" element={<BookingAssistantPage />} />
               <Route path="/my-bookings" element={<MyBookingsPage />} />

@@ -1,13 +1,14 @@
 import { NavLink } from 'react-router-dom';
-import { 
+import {
   LayoutGrid,
-  Settings, 
-  User, 
+  Settings,
+  User,
   Bell,
   ChevronRight,
   ShieldCheck,
   Inbox,
   Briefcase,
+  Building2,
   LogOut,
   Bot,
   CalendarCheck
@@ -18,19 +19,24 @@ import { useNotifications } from '../../context/NotificationContext';
 const Sidebar = () => {
   const { user, simulationRole, logout } = useAuth();
   const { unreadCount } = useNotifications();
-  const effectiveRole = simulationRole || user?.role || 'USER';
-  const isAdmin = effectiveRole === 'ADMIN';
+  const effectiveRole = (simulationRole || user?.role || 'USER').toUpperCase();
+  const isAdmin = effectiveRole === 'ADMIN' || effectiveRole === 'SUPERADMIN';
+  const isInstructor = effectiveRole === 'INSTRUCTOR';
+  const canManageResources = isAdmin || isInstructor;
   const isTechnician = effectiveRole === 'TECHNICIAN';
 
   const menuItems = [
     { icon: LayoutGrid, label: 'Dashboard', path: '/' },
     { icon: Bot, label: 'Book a Room', path: '/book' },
     { icon: CalendarCheck, label: 'My Bookings', path: '/my-bookings' },
-    { 
-      icon: Inbox, 
-      label: isAdmin ? 'Manage Incidents' : isTechnician ? 'Assigned Tasks' : 'Student Tickets', 
-      path: '/tickets' 
+    {
+      icon: Inbox,
+      label: isAdmin ? 'Manage Incidents' : isTechnician ? 'Assigned Tasks' : 'Student Tickets',
+      path: '/tickets'
     },
+    ...(canManageResources ? [
+      { icon: Building2, label: 'Manage Resources', path: '/admin/resources' }
+    ] : []),
     ...(isAdmin ? [
       { icon: User, label: 'User Management', path: '/users' },
       { icon: Briefcase, label: 'Admin View', path: '/admin' }
