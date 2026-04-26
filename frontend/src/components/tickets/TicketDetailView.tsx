@@ -24,7 +24,9 @@ import {
   startWork,
   getTicketById,
   getTechnicians,
-  addTicketComment
+  addTicketComment,
+  deleteTicket,
+  updateTicket
 } from '../../services/ticketApi';
 import type { Ticket, TicketRole, TicketStatus } from '../../services/ticketApi';
 import CommentBubble from './CommentBubble';
@@ -52,6 +54,14 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
   const [showResolveForm, setShowResolveForm] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [technicianList, setTechnicianList] = useState<{id: string, username: string}[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editData, setEditData] = useState({
+    category: ticket.category,
+    priority: ticket.priority,
+    location: ticket.location,
+    description: ticket.description,
+    contactDetails: ticket.contactDetails
+  });
 
   const isAdmin = role === 'ADMIN';
   const isTechnician = role === 'TECHNICIAN';
@@ -139,6 +149,42 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
     }
   };
 
+  const handleDeleteTicket = async () => {
+    if (!window.confirm('Are you sure you want to permanently delete this ticket?')) return;
+    setUpdating(true);
+    try {
+      await deleteTicket(ticket.id, currentUserId);
+      onUpdated();
+      onClose();
+    } catch (error: any) {
+      alert('Failed to delete ticket: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleUpdateTicket = async () => {
+    setUpdating(true);
+    try {
+      const formData = new FormData();
+      formData.append('category', editData.category);
+      formData.append('priority', editData.priority);
+      formData.append('location', editData.location);
+      formData.append('description', editData.description);
+      formData.append('contactDetails', editData.contactDetails || '');
+
+      const updated = await updateTicket(ticket.id, formData, currentUserId);
+      setTicket(updated);
+      setIsEditMode(false);
+      onUpdated();
+      alert('Ticket updated successfully.');
+    } catch (error: any) {
+      alert('Failed to update ticket: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'OPEN': return { color: 'rose', icon: AlertCircle, label: 'Awaiting Review' };
@@ -213,9 +259,9 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
             {/* Vital Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { label: 'Location', value: ticket.location, icon: MapPin, color: 'slate' },
-                { label: 'Priority', value: ticket.priority, icon: TriangleAlert, color: ticket.priority === 'HIGH' ? 'rose' : 'amber' },
-                { label: 'Assigned To', value: ticket.assignedTechnicianName || 'Pending...', icon: UserIcon, color: 'indigo' }
+                { label: 'Location', value: ticket.location, icon: MapPin, color: 'slate', field: 'location' },
+                { label: 'Priority', value: ticket.priority, icon: TriangleAlert, color: ticket.priority === 'HIGH' ? 'rose' : 'amber', field: 'priority' },
+                { label: 'Category', value: ticket.category, icon: Hash, color: 'indigo', field: 'category' }
               ].map((stat, i) => (
                 <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow group">
                   <div className="flex items-center gap-2 mb-3">
@@ -226,9 +272,40 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
                     }`} />
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</span>
                   </div>
-                  <p className={`text-lg font-black tracking-tight ${stat.label === 'Assigned To' && !ticket.assignedTechnicianName ? 'text-slate-300 italic' : 'text-slate-900'}`}>
-                    {stat.value}
-                  </p>
+                  {isEditMode ? (
+                    stat.field === 'priority' ? (
+                      <select 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500"
+                        value={editData.priority}
+                        onChange={e => setEditData({...editData, priority: e.target.value as any})}
+                      >
+                        <option value="LOW">LOW</option>
+                        <option value="MEDIUM">MEDIUM</option>
+                        <option value="HIGH">HIGH</option>
+                      </select>
+                    ) : stat.field === 'category' ? (
+                      <select 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500"
+                        value={editData.category}
+                        onChange={e => setEditData({...editData, category: e.target.value})}
+                      >
+                        {['Electrical', 'Plumbing', 'IT / Network', 'HVAC / Cooling', 'Cleaning', 'Furniture', 'Security', 'Other'].map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input 
+                        type="text"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500"
+                        value={editData.location}
+                        onChange={e => setEditData({...editData, location: e.target.value})}
+                      />
+                    )
+                  ) : (
+                    <p className="text-lg font-black tracking-tight text-slate-900">
+                      {stat.value}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -241,9 +318,17 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
                  <MessageSquare className="w-3.5 h-3.5" /> Incident Report
                </h3>
-               <p className="text-slate-700 font-medium leading-relaxed text-lg">
-                 {ticket.description}
-               </p>
+               {isEditMode ? (
+                 <textarea 
+                   className="w-full min-h-[120px] bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium text-slate-700 focus:outline-none focus:border-indigo-500"
+                   value={editData.description}
+                   onChange={e => setEditData({...editData, description: e.target.value})}
+                 />
+               ) : (
+                 <p className="text-slate-700 font-medium leading-relaxed text-lg">
+                   {ticket.description}
+                 </p>
+               )}
             </div>
 
             {ticket.resolutionNotes && (
@@ -301,6 +386,52 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
                   >
                     Reject Application
                   </button>
+                </motion.div>
+              )}
+
+              {role === 'USER' && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-indigo-50/50 p-8 rounded-[3rem] border border-indigo-100 shadow-inner relative overflow-hidden"
+                >
+                  <h3 className="text-lg font-black text-indigo-900 mb-6 flex items-center gap-2 uppercase tracking-tight">
+                    <UserIcon className="w-6 h-6 text-indigo-500" /> Student Actions
+                  </h3>
+                  
+                  {isEditMode ? (
+                    <div className="flex gap-4">
+                      <button 
+                        onClick={handleUpdateTicket}
+                        disabled={updating}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+                      >
+                        {updating ? <Clock className="animate-spin w-4 h-4" /> : 'Save Changes'}
+                      </button>
+                      <button 
+                        onClick={() => setIsEditMode(false)}
+                        className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-4">
+                      <button 
+                        onClick={() => setIsEditMode(true)}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+                      >
+                        Edit Ticket
+                      </button>
+                      <button 
+                        onClick={handleDeleteTicket}
+                        disabled={updating}
+                        className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-rose-500/30 uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+                      >
+                        Delete Ticket
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
 

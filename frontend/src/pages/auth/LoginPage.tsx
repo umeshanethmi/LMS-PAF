@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-inter">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-inter text-slate-800">
             {/* Background Decorative Elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-200/30 rounded-full blur-[120px]"></div>
@@ -66,7 +66,7 @@ const LoginPage: React.FC = () => {
                             <span className="text-xl font-bold tracking-tight">SmartCampus Hub</span>
                         </div>
                         
-                        <h1 className="text-4xl font-extrabold leading-tight mb-6">
+                        <h1 className="text-4xl font-extrabold leading-tight mb-6 text-white">
                             Manage Campus <br />
                             <span className="text-indigo-200">Operations with AI</span>
                         </h1>
@@ -80,7 +80,7 @@ const LoginPage: React.FC = () => {
                                     <ShieldCheck className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className="font-semibold">Secure RBAC</p>
+                                    <p className="font-semibold text-white">Secure RBAC</p>
                                     <p className="text-sm text-indigo-100">Enterprise-grade role-based access control.</p>
                                 </div>
                             </div>
@@ -89,7 +89,7 @@ const LoginPage: React.FC = () => {
                                     <BellRing className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className="font-semibold">Smart Alerts</p>
+                                    <p className="font-semibold text-white">Smart Alerts</p>
                                     <p className="text-sm text-indigo-100">Stay updated with instant push notifications.</p>
                                 </div>
                             </div>
@@ -188,7 +188,7 @@ const LoginPage: React.FC = () => {
                             </Link>
                         </div>
 
-                        <p className="mt-6 text-center text-sm text-slate-500">
+                        <p className="mt-6 text-center text-sm text-slate-500 font-medium">
                             Don't have an account? <Link to="/register" className="text-indigo-600 font-bold hover:underline">Create Account</Link>
                         </p>
                     </div>
