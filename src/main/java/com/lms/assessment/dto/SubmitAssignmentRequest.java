@@ -14,10 +14,10 @@ import org.springframework.web.multipart.MultipartFile;
 public class SubmitAssignmentRequest {
     
     @NotNull(message = "Assignment ID is required")
-    private Long assignmentId;
+    private String assignmentId;
     
     @NotNull(message = "Student ID is required")
-    private Long studentId;
+    private String studentId;
     
     private String textAnswer;
     

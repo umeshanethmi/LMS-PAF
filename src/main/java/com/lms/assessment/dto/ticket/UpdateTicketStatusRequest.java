@@ -18,7 +18,7 @@ public class UpdateTicketStatusRequest {
     private TicketStatus newStatus;
 
     // Optional: can be set when assigning to or updating by a technician
-    private Long technicianUserId;
+    private String technicianUserId;
 
     @Size(max = 4000, message = "Resolution notes must be at most 4000 characters")
     private String resolutionNotes;

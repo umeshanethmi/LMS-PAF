@@ -1,15 +1,18 @@
 package com.lms.assessment.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "quiz_attempts")
+@Document(collection = "quiz_attempts")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,35 +20,25 @@ import java.util.List;
 public class QuizAttempt {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "quiz_id", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Quiz quiz;
+    @Indexed
+    private String quizId;
 
-    // Reference to external student/user ID
-    @Column(nullable = false)
-    private Long studentId;
+    @Indexed
+    private String studentId;
 
-    @Column(nullable = false)
     private Integer attemptNumber;
 
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
     private LocalDateTime startedAt;
 
     private LocalDateTime submittedAt;
 
     private Integer obtainedMarks;
 
-    // E.g. IN_PROGRESS, COMPLETED
-    @Column(nullable = false)
+    /** E.g. IN_PROGRESS, COMPLETED. */
     private String status;
 
-    @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<QuizAnswer> answers = new ArrayList<>();
 }

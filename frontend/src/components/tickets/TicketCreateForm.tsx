@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import type { FormEvent } from 'react';
-import axios from 'axios';
+import { createTicket } from '../../services/ticketApi';
 import FileUpload from '../common/FileUpload';
-import { Loader2, PlusCircle, PenLine, Settings, MapPin, Hash, Phone } from 'lucide-react';
+import { Clock, CirclePlus, PenLine, Settings, MapPin, Hash, Phone } from 'lucide-react';
 
 interface TicketCreateFormProps {
-  currentUserId: number;
+  currentUserId: string;
   onCreated: () => void;
 }
 
 function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
-  const [resourceId, setResourceId] = useState('');
+  const [email, setEmail] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
@@ -18,6 +18,17 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
   const [contactDetails, setContactDetails] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const categories = [
+    'Electrical',
+    'Plumbing',
+    'IT / Network',
+    'HVAC / Cooling',
+    'Cleaning',
+    'Furniture',
+    'Security',
+    'Other'
+  ];
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,23 +38,23 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
     }
 
     const formData = new FormData();
-    formData.append('resourceId', resourceId);
+    formData.append('email', email);
     formData.append('description', description);
     formData.append('category', category);
     formData.append('priority', priority);
     formData.append('location', location);
     formData.append('contactDetails', contactDetails);
+    formData.append('currentUserId', currentUserId.toString());
+    
     files.forEach((file) => {
-      formData.append('images', file); // 'files' වෙනුවට 'images' දාන්න
+      formData.append('files', file); 
     });
 
     setLoading(true);
     try {
-      await axios.post('http://localhost:8080/api/maintenancetickets', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Incident ticket saved successfully!');
-      setResourceId('');
+      await createTicket(formData);
+      alert('Incident ticket reported successfully!');
+      setEmail('');
       setDescription('');
       setCategory('');
       setPriority('MEDIUM');
@@ -51,9 +62,10 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
       setContactDetails('');
       setFiles([]);
       onCreated();
-    } catch (error) {
-      console.dir(error);
-      alert('Failed to create ticket');
+    } catch (error: any) {
+      console.error('Failed to create ticket', error);
+      const message = error.response?.data?.message || error.message || 'Failed to report incident. Please try again.';
+      alert(`Error: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -64,28 +76,52 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
       <div className="absolute top-0 right-0 -mt-16 -mr-16 h-32 w-32 rounded-full bg-indigo-500/10 blur-2xl"></div>
       
       <div className="relative z-10 flex items-center gap-3 mb-8 pb-4 border-b border-slate-100">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 shadow-inner">
-          <PlusCircle className="h-5 w-5" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 shadow-inner border border-indigo-100/50">
+          <CirclePlus className="h-5 w-5" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-800">New Incident Map</h2>
-          <p className="text-xs font-medium text-slate-500">Report an issue immediately</p>
+          <h2 className="text-xl font-bold text-slate-800">Report Incident</h2>
+          <p className="text-xs font-medium text-slate-500 italic">Provide details about the issue</p>
         </div>
       </div>
 
       <div className="relative z-10 space-y-5">
-        <div className="space-y-1.5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
-          <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
-            <Hash className="h-4 w-4 text-indigo-500" />
-            Resource ID
-          </label>
-          <input
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            value={resourceId}
-            onChange={(e) => setResourceId(e.target.value)}
-            placeholder="e.g. PC-Lab-01"
-            required
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-1.5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
+            <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
+              <Settings className="h-4 w-4 text-indigo-500" />
+              Category
+            </label>
+            <select
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+            >
+              <option value="" disabled>Select Category</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
+            <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
+              <span className="relative flex h-3 w-3">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${priority === 'HIGH' ? 'bg-rose-400' : priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
+                <span className={`relative inline-flex rounded-full h-3 w-3 ${priority === 'HIGH' ? 'bg-rose-500' : priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+              </span>
+              Priority
+            </label>
+            <select
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
+            >
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+          </div>
         </div>
 
         <div className="space-y-1.5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
@@ -102,39 +138,8 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
-              <Settings className="h-4 w-4 text-indigo-500" />
-              Category
-            </label>
-            <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. Hardware"
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
-              <span className="relative flex h-3 w-3">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${priority === 'HIGH' ? 'bg-rose-400' : priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
-                <span className={`relative inline-flex rounded-full h-3 w-3 ${priority === 'HIGH' ? 'bg-rose-500' : priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-              </span>
-              Priority
-            </label>
-            <select
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
-            >
-              <option value="LOW">Low Priority</option>
-              <option value="MEDIUM">Medium Priority</option>
-              <option value="HIGH">High Priority</option>
-            </select>
-          </div>
-          <div className="col-span-1 md:col-span-2 space-y-1.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-1.5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
             <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
               <MapPin className="h-4 w-4 text-indigo-500" />
               Location
@@ -143,7 +148,21 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Building A, Room 204"
+              placeholder="e.g. Block B, Room 302"
+              required
+            />
+          </div>
+          <div className="space-y-1.5 border border-slate-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm">
+            <label className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-600 uppercase">
+              <Hash className="h-4 w-4 text-indigo-500" />
+              Email Address
+            </label>
+            <input
+              type="email"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="yourname@example.com"
               required
             />
           </div>
@@ -158,7 +177,7 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
             className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             value={contactDetails}
             onChange={(e) => setContactDetails(e.target.value)}
-            placeholder="Your phone or email"
+            placeholder="Your phone or extension"
             required
           />
         </div>
@@ -190,13 +209,13 @@ function TicketCreateForm({ currentUserId, onCreated }: TicketCreateFormProps) {
           <div className="flex items-center justify-center gap-2">
             {loading ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Clock className="h-5 w-5 animate-spin" />
                 <span>Submitting Incident...</span>
               </>
             ) : (
               <>
                 <span>Submit Incident Ticket</span>
-                <PlusCircle className="h-5 w-5 transition-transform group-hover:scale-110" />
+                <CirclePlus className="h-5 w-5 transition-transform group-hover:scale-110" />
               </>
             )}
           </div>

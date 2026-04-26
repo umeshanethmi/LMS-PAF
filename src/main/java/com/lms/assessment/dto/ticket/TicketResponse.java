@@ -16,17 +16,18 @@ import java.util.List;
 @AllArgsConstructor
 public class TicketResponse {
 
-    private Long id;
-    private String title;
-    private String description;
+    private String id;
+    private String email;
+    private String location;
     private String category;
+    private String description;
     private Priority priority;
     private TicketStatus status;
-    private String location;
-    private Long facilityId;
+    private String contactDetails;
     private String preferredContact;
-    private Long reporterUserId;
-    private Long technicianUserId;
+    private String assignedTechnicianId;
+    private String assignedTechnicianName;
+    private String reporterUserId;
     private String resolutionNotes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

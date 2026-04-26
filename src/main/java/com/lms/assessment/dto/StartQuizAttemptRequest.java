@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StartQuizAttemptRequest {
-    private Long quizId;
-    private Long studentId;
+    private String quizId;
+    private String studentId;
 }
