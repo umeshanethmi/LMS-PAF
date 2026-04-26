@@ -11,7 +11,10 @@ import {
   HelpCircle
 } from 'lucide-react';
 
+import { useAuth } from '../../context/AuthContext';
+
 const Sidebar = () => {
+  const { logout } = useAuth();
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Ticket, label: 'Maintenance', path: '/tickets' },
@@ -68,7 +71,10 @@ const Sidebar = () => {
           </button>
         </div>
 
-        <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 group">
+        <button 
+          onClick={logout}
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 group"
+        >
           <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform" />
           <span className="font-medium text-sm">Logout</span>
         </button>

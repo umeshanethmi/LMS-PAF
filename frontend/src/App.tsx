@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useLocation, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
 import IncidentTicketsPage from './pages/maintenance/IncidentTicketsPage';
 import DashboardPage from './pages/DashboardPage';
@@ -7,8 +7,7 @@ import type { ErrorInfo, ReactNode } from 'react';
 import Sidebar from './components/common/Sidebar';
 import { Bell, Search, User } from 'lucide-react';
 
-// You can create and uncomment your LoginPage import here:
-// import LoginPage from './pages/auth/LoginPage';
+
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -48,7 +47,32 @@ class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundary
   }
 }
 
-function App() {
+
+import LoginPage from './pages/auth/LoginPage';
+import LoginSuccess from './pages/auth/LoginSuccess';
+import { AuthProvider, useAuth } from './context/AuthContext';
+
+const AppContent = () => {
+  const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/login/success';
+
+  if (isLoginPage) {
+    return (
+      <AppErrorBoundary>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login/success" element={<LoginSuccess />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AppErrorBoundary>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-inter">
       {/* Sidebar Component */}
@@ -75,11 +99,15 @@ function App() {
             <div className="h-8 w-px bg-slate-200"></div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-sm font-semibold text-slate-800">Admin User</p>
-                <p className="text-xs text-slate-500">Super Administrator</p>
+                <p className="text-sm font-semibold text-slate-800">{user?.name || 'User'}</p>
+                <p className="text-xs text-slate-500">{user?.role || 'Member'}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center border border-indigo-200">
-                <User className="w-5 h-5 text-indigo-600" />
+              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center border border-indigo-200 overflow-hidden">
+                {user?.picture ? (
+                  <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-5 h-5 text-indigo-600" />
+                )}
               </div>
             </div>
           </div>
@@ -95,8 +123,8 @@ function App() {
               {/* Maintenance Ticketing Routes */}
               <Route path="/tickets" element={<IncidentTicketsPage />} />
 
-              {/* Login Route */}
-              <Route path="/login" element={<div className="p-4 text-center">Login Page Under Construction</div>} />
+              {/* Redirects */}
+              <Route path="/login" element={<Navigate to="/" replace />} />
               
               {/* Placeholder Routes for Sidebar items */}
               <Route path="/notifications" element={<div className="p-4">Notifications Panel</div>} />
@@ -104,12 +132,20 @@ function App() {
               <Route path="/settings" element={<div className="p-4">Global System Settings</div>} />
               
               {/* Catch-all fallback */}
-              <Route path="*" element={<Navigate to="/tickets" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AppErrorBoundary>
         </main>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
