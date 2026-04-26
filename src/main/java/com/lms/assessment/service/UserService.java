@@ -62,7 +62,7 @@ public class UserService {
     public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
-    
+
     public User updateUserRole(String id, User.Role role) {
         User user = userRepository.findById(id).orElseThrow();
         user.setRole(role);

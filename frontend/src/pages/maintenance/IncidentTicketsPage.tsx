@@ -213,7 +213,7 @@ function IncidentTicketsPage() {
             </div>
           </div>
           
-          {(isUser || isAdmin) && (
+          {isUser && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="group relative flex items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 text-sm font-black uppercase tracking-widest text-slate-950 shadow-2xl transition-all hover:scale-105 hover:bg-indigo-50 active:scale-95"

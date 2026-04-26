@@ -73,13 +73,13 @@ export async function deleteTicket(ticketId: string, currentUserId: string): Pro
 }
 
 export async function addTicketComment(ticketId: string, content: string, currentUserId: string, role: TicketRole) {
-  const senderName = role === 'ADMIN' ? 'System Administrator' : 
-                    role === 'TECHNICIAN' ? 'Campus Technician' : 'Student';
-  
-  const res = await apiClient.post(`/tickets/${ticketId}/comments`, { 
-    content, 
-    senderName, 
-    senderRole: role 
+  const senderName = role === 'ADMIN' ? 'System Administrator' :
+    role === 'TECHNICIAN' ? 'Campus Technician' : 'Student';
+
+  const res = await apiClient.post(`/tickets/${ticketId}/comments`, {
+    content,
+    senderName,
+    senderRole: role
   }, {
     params: { currentUserId, role },
   });

@@ -14,14 +14,14 @@ interface AssignTechnicianModalProps {
   onAssign: () => void;
 }
 
-const AssignTechnicianModal: React.FC<AssignTechnicianModalProps> = ({ 
-  ticketId, 
-  ticketCategory, 
+const AssignTechnicianModal: React.FC<AssignTechnicianModalProps> = ({
+  ticketId,
+  ticketCategory,
   ticketLocation,
   currentUserId,
   role,
-  onClose, 
-  onAssign 
+  onClose,
+  onAssign
 }) => {
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [selectedTechnician, setSelectedTechnician] = useState('');
@@ -65,14 +65,14 @@ const AssignTechnicianModal: React.FC<AssignTechnicianModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="relative w-full max-w-md overflow-hidden bg-white rounded-[2.5rem] shadow-2xl border border-slate-100"
       >
         {/* Animated Accent */}
         <div className="absolute top-0 right-0 h-3 w-40 bg-indigo-600 rounded-bl-[2.5rem]"></div>
-        
+
         <div className="p-10">
           {/* Header */}
           <div className="flex items-center gap-6 mb-10">
@@ -120,9 +120,16 @@ const AssignTechnicianModal: React.FC<AssignTechnicianModalProps> = ({
                   className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-all appearance-none cursor-pointer disabled:opacity-50"
                 >
                   <option value="">Select Technician...</option>
-                  {technicians.map((tech) => (
+                  <option value="TECH-101">Saman Kumara - Electrical & Power (TECH-101)</option>
+                  <option value="TECH-102">Sunil Perera - Plumbing & Piping (TECH-102)</option>
+                  <option value="TECH-103">Kamal Silva - IT & Network Support (TECH-103)</option>
+                  <option value="TECH-104">Nimal Sirisena - HVAC & Air Conditioning (TECH-104)</option>
+                  <option value="TECH-105">Aruni Jayawardena - Civil & Structural (TECH-105)</option>
+                  <option value="TECH-106">Kasun Bandara - Furniture & Carpentry (TECH-106)</option>
+                  <option value="TECH-107">Sajeewa Perera - Security & Surveillance (TECH-107)</option>
+                  {technicians.filter(t => !t.id.startsWith('TECH-')).map((tech) => (
                     <option key={tech.id} value={tech.id}>
-                      {tech.username} (ID: {tech.id.substring(0,6)})
+                      {tech.username} - {tech.specialty || 'General Expert'} ({tech.id})
                     </option>
                   ))}
                 </select>
@@ -158,7 +165,7 @@ const AssignTechnicianModal: React.FC<AssignTechnicianModalProps> = ({
                   </>
                 )}
               </button>
-              
+
               <button
                 onClick={onClose}
                 disabled={loading}

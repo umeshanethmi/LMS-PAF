@@ -39,10 +39,10 @@ public class TicketServiceImpl implements TicketService {
     private final EmailService emailService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
-                             TicketAttachmentRepository attachmentRepository,
-                             UserRepository userRepository,
-                             FileStorageService fileStorageService,
-                             EmailService emailService) {
+            TicketAttachmentRepository attachmentRepository,
+            UserRepository userRepository,
+            FileStorageService fileStorageService,
+            EmailService emailService) {
         this.ticketRepository = ticketRepository;
         this.attachmentRepository = attachmentRepository;
         this.userRepository = userRepository;
@@ -69,7 +69,8 @@ public class TicketServiceImpl implements TicketService {
 
         int totalAttachments = countProvidedAttachments(files, attachmentPaths);
         if (totalAttachments > MAX_ATTACHMENTS_PER_TICKET) {
-            throw new SubmissionException("A maximum of " + MAX_ATTACHMENTS_PER_TICKET + " attachments is allowed per ticket.");
+            throw new SubmissionException(
+                    "A maximum of " + MAX_ATTACHMENTS_PER_TICKET + " attachments is allowed per ticket.");
         }
 
         Ticket ticket = Ticket.builder()
@@ -81,8 +82,8 @@ public class TicketServiceImpl implements TicketService {
                 .priority(request.getPriority())
                 .contactDetails(contactDetails)
                 .status(TicketStatus.OPEN)
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         Ticket saved = ticketRepository.save(ticket);
@@ -98,20 +99,20 @@ public class TicketServiceImpl implements TicketService {
     private void sendConfirmationEmail(Ticket ticket) {
         String subject = "Incident Reported: " + ticket.getId();
         String htmlBody = String.format(
-            "<html><body>" +
-            "<h2>Incident Report Confirmation</h2>" +
-            "<p>Dear User,</p>" +
-            "<p>Your incident has been successfully reported. Our team will look into it shortly.</p>" +
-            "<p><b>Ticket ID:</b> %s</p>" +
-            "<p><b>Category:</b> %s</p>" +
-            "<p><b>Location:</b> %s</p>" +
-            "<p><b>Priority:</b> %s</p>" +
-            "<p><b>Description:</b> %s</p>" +
-            "<br>" +
-            "<p>Regards,<br>UniFlex Hub Support</p>" +
-            "</body></html>",
-            ticket.getId(), ticket.getCategory(), ticket.getLocation(), ticket.getPriority(), ticket.getDescription()
-        );
+                "<html><body>" +
+                        "<h2>Incident Report Confirmation</h2>" +
+                        "<p>Dear User,</p>" +
+                        "<p>Your incident has been successfully reported. Our team will look into it shortly.</p>" +
+                        "<p><b>Ticket ID:</b> %s</p>" +
+                        "<p><b>Category:</b> %s</p>" +
+                        "<p><b>Location:</b> %s</p>" +
+                        "<p><b>Priority:</b> %s</p>" +
+                        "<p><b>Description:</b> %s</p>" +
+                        "<br>" +
+                        "<p>Regards,<br>UniFlex Hub Support</p>" +
+                        "</body></html>",
+                ticket.getId(), ticket.getCategory(), ticket.getLocation(), ticket.getPriority(),
+                ticket.getDescription());
 
         emailService.sendHtmlEmail(ticket.getEmail(), subject, htmlBody);
     }
@@ -131,12 +132,20 @@ public class TicketServiceImpl implements TicketService {
                 currentUser = userRepository.findById(currentUserId).orElse(null);
             }
 
-            // If the authentic user is an ADMIN, they should see everything even when simulating
+            // If the authentic user is an ADMIN, they should see everything even when
+            // simulating
             if (currentUser != null && currentUser.getRole() == User.Role.ADMIN) {
                 tickets = ticketRepository.findAll(sort);
             } else if (actorRole == TicketActorRole.TECHNICIAN) {
                 // Real Technicians only see their assigned tickets
-                tickets = ticketRepository.findByAssignedTechnicianId(currentUserId, sort);
+                if ("0".equals(currentUserId)) {
+                    // For Guest Simulation, show ALL assigned tickets to demonstrate the dashboard
+                    tickets = ticketRepository.findAll(sort).stream()
+                        .filter(t -> t.getAssignedTechnicianId() != null && !t.getAssignedTechnicianId().isEmpty())
+                        .collect(Collectors.toList());
+                } else {
+                    tickets = ticketRepository.findByAssignedTechnicianId(currentUserId, sort);
+                }
             } else {
                 // Real Users only see their reported tickets
                 if (currentUserId == null || currentUserId.isBlank()) {
@@ -185,15 +194,17 @@ public class TicketServiceImpl implements TicketService {
         }
 
         ticket.setUpdatedAt(LocalDateTime.now());
-        
+
         List<MultipartFile> files = request.getFiles() == null ? Collections.emptyList() : request.getFiles();
-        List<String> attachmentPaths = request.getAttachmentPaths() == null ? Collections.emptyList() : request.getAttachmentPaths();
-        
+        List<String> attachmentPaths = request.getAttachmentPaths() == null ? Collections.emptyList()
+                : request.getAttachmentPaths();
+
         int currentAttachmentCount = attachmentRepository.findByTicketId(ticketId).size();
         int newAttachmentsCount = countProvidedAttachments(files, attachmentPaths);
-        
+
         if (currentAttachmentCount + newAttachmentsCount > MAX_ATTACHMENTS_PER_TICKET) {
-            throw new SubmissionException("A maximum of " + MAX_ATTACHMENTS_PER_TICKET + " attachments is allowed per ticket.");
+            throw new SubmissionException(
+                    "A maximum of " + MAX_ATTACHMENTS_PER_TICKET + " attachments is allowed per ticket.");
         }
 
         Ticket saved = ticketRepository.save(ticket);
@@ -222,7 +233,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponse assignTechnician(String ticketId, AssignTechnicianRequest request, String currentUserId,
-                                           TicketActorRole actorRole) {
+            TicketActorRole actorRole) {
         requireRole(actorRole, TicketActorRole.ADMIN, "Only administrators can assign technicians.");
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -235,17 +246,17 @@ public class TicketServiceImpl implements TicketService {
         ticket.setAssignedTechnicianId(request.getTechnicianId());
         ticket.setStatus(TicketStatus.ASSIGNED);
         ticket.setUpdatedAt(LocalDateTime.now());
-        
+
         Ticket updated = ticketRepository.save(ticket);
 
         // Notify user via Email
         try {
             String subject = "Technician Assigned: Ticket #" + ticket.getId();
             String body = "<h3>Technician Assigned</h3>" +
-                         "<p>An expert has been assigned to your maintenance request.</p>" +
-                         "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
-                         "<p><b>Status:</b> ASSIGNED</p>" +
-                         "<p>Work will begin shortly.</p>";
+                    "<p>An expert has been assigned to your maintenance request.</p>" +
+                    "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
+                    "<p><b>Status:</b> ASSIGNED</p>" +
+                    "<p>Work will begin shortly.</p>";
             emailService.sendHtmlEmail(ticket.getEmail(), subject, body);
         } catch (Exception e) {
             System.err.println("Notification failed: " + e.getMessage());
@@ -259,7 +270,7 @@ public class TicketServiceImpl implements TicketService {
         // 1. Validation Logic
         User adminUser = userRepository.findById(requestingUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", requestingUserId));
-        
+
         if (adminUser.getRole() != User.Role.ADMIN) {
             throw new ForbiddenOperationException("Access Denied: Only administrators can dispatch tickets.");
         }
@@ -281,13 +292,13 @@ public class TicketServiceImpl implements TicketService {
             try {
                 String subject = "New Mission Assigned: Ticket #" + ticket.getId();
                 String body = "<h3>New Assignment Received</h3>" +
-                             "<p>Hello " + tech.getUsername() + ",</p>" +
-                             "<p>You have been dispatched to handle a new incident.</p>" +
-                             "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
-                             "<p><b>Location:</b> " + ticket.getLocation() + "</p>" +
-                             "<p><b>Category:</b> " + ticket.getCategory() + "</p>" +
-                             "<p><b>Priority:</b> " + ticket.getPriority() + "</p>" +
-                             "<br><p>Log in to the CampusHub Tech Portal to begin work.</p>";
+                        "<p>Hello " + tech.getUsername() + ",</p>" +
+                        "<p>You have been dispatched to handle a new incident.</p>" +
+                        "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
+                        "<p><b>Location:</b> " + ticket.getLocation() + "</p>" +
+                        "<p><b>Category:</b> " + ticket.getCategory() + "</p>" +
+                        "<p><b>Priority:</b> " + ticket.getPriority() + "</p>" +
+                        "<br><p>Log in to the CampusHub Tech Portal to begin work.</p>";
                 emailService.sendHtmlEmail(tech.getEmail(), subject, body);
             } catch (Exception e) {
                 log.error("Failed to notify technician via email: {}", e.getMessage());
@@ -342,7 +353,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponse updateTicketStatus(String ticketId, UpdateTicketStatusRequest request,
-                                             String currentUserId, TicketActorRole actorRole) {
+            String currentUserId, TicketActorRole actorRole) {
         requireRole(actorRole, TicketActorRole.TECHNICIAN, "Only technicians can update ticket status.");
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -377,7 +388,8 @@ public class TicketServiceImpl implements TicketService {
         } else {
             // Standard workflow check
             if (!isValidStatusTransition(currentStatus, newStatus)) {
-                throw new SubmissionException("Invalid status transition from " + currentStatus + " to " + newStatus + ". Workflow must strictly follow: OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED.");
+                throw new SubmissionException("Invalid status transition from " + currentStatus + " to " + newStatus
+                        + ". Workflow must strictly follow: OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED.");
             }
 
             if ((newStatus == TicketStatus.RESOLVED || newStatus == TicketStatus.CLOSED)
@@ -398,14 +410,14 @@ public class TicketServiceImpl implements TicketService {
         try {
             String subject = "Status Update: Ticket #" + ticket.getId();
             String body = "<h3>Ticket Status Updated</h3>" +
-                         "<p>The status of your maintenance request has changed.</p>" +
-                         "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
-                         "<p><b>New Status:</b> " + updated.getStatus() + "</p>";
-            
+                    "<p>The status of your maintenance request has changed.</p>" +
+                    "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
+                    "<p><b>New Status:</b> " + updated.getStatus() + "</p>";
+
             if (updated.getResolutionNotes() != null) {
                 body += "<p><b>Notes:</b> " + updated.getResolutionNotes() + "</p>";
             }
-            
+
             emailService.sendHtmlEmail(ticket.getEmail(), subject, body);
         } catch (Exception e) {
             System.err.println("Notification failed: " + e.getMessage());
@@ -417,23 +429,34 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public List<TicketResponse> getTicketsByTechnician(String technicianId) {
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
-        List<Ticket> tickets = ticketRepository.findByAssignedTechnicianId(technicianId, sort);
+        List<Ticket> tickets;
         
+        if ("0".equals(technicianId)) {
+            // For Guest Simulation, show ALL assigned tickets to demonstrate the dashboard
+            tickets = ticketRepository.findAll(sort).stream()
+                .filter(t -> t.getAssignedTechnicianId() != null && !t.getAssignedTechnicianId().isEmpty())
+                .collect(Collectors.toList());
+        } else {
+            tickets = ticketRepository.findByAssignedTechnicianId(technicianId, sort);
+        }
+
         // Ensure we return a clean JSON array even if empty
-        if (tickets == null) return new java.util.ArrayList<>();
-        
+        if (tickets == null)
+            return new java.util.ArrayList<>();
+
         return tickets.stream()
                 .map(t -> mapToTicketResponse(t, false))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public TicketCommentResponse addComment(String ticketId, CreateCommentRequest request, String currentUserId, TicketActorRole role) {
+    public TicketCommentResponse addComment(String ticketId, CreateCommentRequest request, String currentUserId,
+            TicketActorRole role) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
-        String authorName = role == TicketActorRole.ADMIN ? "Guest Admin" : 
-                           role == TicketActorRole.TECHNICIAN ? "Guest Technician" : "Guest Student";
+        String authorName = role == TicketActorRole.ADMIN ? "Guest Admin"
+                : role == TicketActorRole.TECHNICIAN ? "Guest Technician" : "Guest Student";
         TicketActorRole authorRole = role;
 
         // If frontend provided metadata, use it (useful for simulated/guest states)
@@ -443,13 +466,14 @@ public class TicketServiceImpl implements TicketService {
         if (request.getSenderRole() != null && !request.getSenderRole().isBlank()) {
             try {
                 authorRole = TicketActorRole.valueOf(request.getSenderRole().toUpperCase());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         // If we have a real user ID, override with database data for security
         if (!"0".equals(currentUserId)) {
             User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
             authorName = currentUser.getUsername();
             authorRole = TicketActorRole.valueOf(currentUser.getRole().name());
         }
@@ -468,12 +492,13 @@ public class TicketServiceImpl implements TicketService {
 
         ticket.getComments().add(comment);
         ticketRepository.save(ticket);
-        
+
         return mapToCommentResponse(comment);
     }
 
     @Override
-    public TicketCommentResponse updateComment(String ticketId, String commentId, UpdateCommentRequest request, String currentUserId) {
+    public TicketCommentResponse updateComment(String ticketId, String commentId, UpdateCommentRequest request,
+            String currentUserId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
@@ -488,7 +513,7 @@ public class TicketServiceImpl implements TicketService {
 
         comment.setMessage(request.getContent());
         ticketRepository.save(ticket);
-        
+
         return mapToCommentResponse(comment);
     }
 
@@ -504,7 +529,7 @@ public class TicketServiceImpl implements TicketService {
 
         boolean isOwner = Objects.equals(commentToRemove.getAuthorUserId(), currentUserId);
         boolean isAdmin = actorRole == TicketActorRole.ADMIN;
-        
+
         if (!isOwner && !isAdmin) {
             throw new ForbiddenOperationException("Access Denied: You are not authorized to delete this comment.");
         }
@@ -627,9 +652,9 @@ public class TicketServiceImpl implements TicketService {
         String techName = null;
         if (ticket.getAssignedTechnicianId() != null) {
             techName = userRepository.findById(ticket.getAssignedTechnicianId())
-                .map(User::getUsername)
-                .orElse("Expert #" + ticket.getAssignedTechnicianId());
-            
+                    .map(User::getUsername)
+                    .orElse("Expert #" + ticket.getAssignedTechnicianId());
+
             // Special case for guest system
             if ("0".equals(ticket.getAssignedTechnicianId())) {
                 techName = "Guest System";
@@ -665,7 +690,7 @@ public class TicketServiceImpl implements TicketService {
     private TicketAttachmentResponse mapToAttachmentResponse(TicketAttachment attachment) {
         String fileName = attachment.getImagePath();
         String fileUrl = fileName;
-        
+
         if (fileName != null && !fileName.startsWith("http")) {
             fileUrl = "http://localhost:8084/api/tickets/attachments/" + fileName;
         }
@@ -685,14 +710,17 @@ public class TicketServiceImpl implements TicketService {
                 // Determine role from name for legacy/simulated guest comments
                 String author = comment.getAuthor();
                 if (author != null) {
-                    if (author.contains("Admin")) responseRole = TicketActorRole.ADMIN;
-                    else if (author.contains("Technician")) responseRole = TicketActorRole.TECHNICIAN;
-                    else responseRole = TicketActorRole.USER;
+                    if (author.contains("Admin"))
+                        responseRole = TicketActorRole.ADMIN;
+                    else if (author.contains("Technician"))
+                        responseRole = TicketActorRole.TECHNICIAN;
+                    else
+                        responseRole = TicketActorRole.USER;
                 }
             } else if (comment.getAuthorUserId() != null) {
                 responseRole = userRepository.findById(comment.getAuthorUserId())
-                    .map(user -> TicketActorRole.valueOf(user.getRole().name()))
-                    .orElse(TicketActorRole.USER);
+                        .map(user -> TicketActorRole.valueOf(user.getRole().name()))
+                        .orElse(TicketActorRole.USER);
             }
         }
 
@@ -702,7 +730,7 @@ public class TicketServiceImpl implements TicketService {
                 .userId(comment.getAuthorUserId())
                 .authorUserId(comment.getAuthorUserId())
                 .author(comment.getAuthor())
-            .authorRole(responseRole == null ? null : responseRole.name())
+                .authorRole(responseRole == null ? null : responseRole.name())
                 .content(comment.getMessage())
                 .timestamp(comment.getCreatedAt())
                 .createdAt(comment.getCreatedAt())
@@ -744,26 +772,28 @@ public class TicketServiceImpl implements TicketService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
         if (ticket.getStatus() != TicketStatus.ASSIGNED) {
-            throw new SubmissionException("Work can only be started on tickets that are currently ASSIGNED. Current status: " + ticket.getStatus());
+            throw new SubmissionException(
+                    "Work can only be started on tickets that are currently ASSIGNED. Current status: "
+                            + ticket.getStatus());
         }
 
         if (!Objects.equals(ticket.getAssignedTechnicianId(), techId)) {
-             // In a real system we would check roles here too
-             throw new ForbiddenOperationException("Only the assigned technician can start work on this ticket.");
+            // In a real system we would check roles here too
+            throw new ForbiddenOperationException("Only the assigned technician can start work on this ticket.");
         }
 
         ticket.setStatus(TicketStatus.IN_PROGRESS);
         ticket.setUpdatedAt(LocalDateTime.now());
 
         Ticket updated = ticketRepository.save(ticket);
-        
+
         // Notify user via Email
         try {
             String subject = "Work Started: Ticket #" + ticket.getId();
             String body = "<h3>Work In Progress</h3>" +
-                         "<p>A technician has officially started working on your request.</p>" +
-                         "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
-                         "<p><b>Status:</b> IN_PROGRESS</p>";
+                    "<p>A technician has officially started working on your request.</p>" +
+                    "<p><b>Ticket ID:</b> " + ticket.getId() + "</p>" +
+                    "<p><b>Status:</b> IN_PROGRESS</p>";
             emailService.sendHtmlEmail(ticket.getEmail(), subject, body);
         } catch (Exception e) {
             System.err.println("Notification failed: " + e.getMessage());
