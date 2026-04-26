@@ -25,19 +25,19 @@ public class StudentAssignmentController {
     }
 
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<List<AssignmentResponse>> getAssignmentsByCourse(@PathVariable Long courseId) {
+    public ResponseEntity<List<AssignmentResponse>> getAssignmentsByCourse(@PathVariable String courseId) {
         return ResponseEntity.ok(assignmentService.getPublishedAssignmentsByCourse(courseId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AssignmentResponse> getAssignmentById(@PathVariable Long id) {
+    public ResponseEntity<AssignmentResponse> getAssignmentById(@PathVariable String id) {
         return ResponseEntity.ok(assignmentService.getAssignmentById(id));
     }
 
     @PostMapping(value = "/{id}/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<AssignmentSubmissionResponse> submitAssignment(
-            @PathVariable Long id,
-            @RequestParam("studentId") @jakarta.validation.constraints.NotNull Long studentId,
+            @PathVariable String id,
+            @RequestParam("studentId") @jakarta.validation.constraints.NotNull String studentId,
             @RequestParam(value = "textAnswer", required = false) String textAnswer,
             @RequestParam(value = "file", required = false) MultipartFile file) {
         
@@ -52,12 +52,12 @@ public class StudentAssignmentController {
     }
 
     @GetMapping("/submissions/{submissionId}")
-    public ResponseEntity<AssignmentSubmissionResponse> getSubmission(@PathVariable Long submissionId) {
+    public ResponseEntity<AssignmentSubmissionResponse> getSubmission(@PathVariable String submissionId) {
         return ResponseEntity.ok(assignmentService.getSubmissionById(submissionId));
     }
     
     @GetMapping("/submissions/{submissionId}/file")
-    public ResponseEntity<Resource> downloadSubmissionFile(@PathVariable Long submissionId) {
+    public ResponseEntity<Resource> downloadSubmissionFile(@PathVariable String submissionId) {
         Resource resource = assignmentService.downloadSubmissionFile(submissionId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")

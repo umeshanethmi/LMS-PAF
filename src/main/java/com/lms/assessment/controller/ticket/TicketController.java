@@ -1,14 +1,19 @@
 package com.lms.assessment.controller.ticket;
 
 import com.lms.assessment.dto.ticket.*;
+import com.lms.assessment.model.ticket.TicketActorRole;
 import com.lms.assessment.service.ticket.TicketService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
+import com.lms.assessment.service.FileStorageService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import java.util.List;
 
 @RestController
@@ -16,83 +21,109 @@ import java.util.List;
 public class TicketController {
 
     private final TicketService ticketService;
+    private final FileStorageService fileStorageService;
 
-    public TicketController(TicketService ticketService) {
+    public TicketController(TicketService ticketService, FileStorageService fileStorageService) {
         this.ticketService = ticketService;
+        this.fileStorageService = fileStorageService;
     }
 
-    // STEP 7: Create ticket with up to 3 image files
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TicketResponse> createTicket(
-            @RequestParam("currentUserId") @NotNull Long currentUserId,
-            @RequestParam("title") String title,
-            @RequestParam("description") String description,
-            @RequestParam("category") String category,
-            @RequestParam("priority") com.lms.assessment.model.ticket.Priority priority,
-            @RequestParam(value = "location", required = false) String location,
-            @RequestParam(value = "facilityId", required = false) Long facilityId,
-            @RequestParam(value = "preferredContact", required = false) String preferredContact,
-            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+            @Valid @ModelAttribute CreateTicketRequest request) {
 
-        CreateTicketRequest request = CreateTicketRequest.builder()
-                .title(title)
-                .description(description)
-                .category(category)
-                .priority(priority)
-                .location(location)
-                .facilityId(facilityId)
-                .preferredContact(preferredContact)
-                .files(files)
+        return ResponseEntity.ok(ticketService.createTicket(request));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<TicketResponse>> getAllTickets(
+            @RequestParam(value = "currentUserId", required = false) String currentUserId,
+            @RequestParam(value = "role", defaultValue = "USER") TicketActorRole role) {
+        return ResponseEntity.ok(ticketService.getAllTickets(currentUserId, role));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TicketResponse> getTicketById(@PathVariable("id") String id) {
+        return ResponseEntity.ok(ticketService.getTicketById(id));
+    }
+
+    @PutMapping("/{id}/assign")
+    public ResponseEntity<TicketResponse> assignTechnician(
+            @PathVariable("id") String id,
+            @RequestParam("technicianId") @NotNull String technicianId,
+            @RequestParam(value = "currentUserId", required = false) String currentUserId,
+            @RequestParam(value = "role", defaultValue = "USER") TicketActorRole role) {
+
+        AssignTechnicianRequest request = AssignTechnicianRequest.builder()
+                .technicianId(technicianId)
                 .build();
 
-        return ResponseEntity.ok(ticketService.createTicket(request, currentUserId));
+        return ResponseEntity.ok(ticketService.assignTechnician(id, request, currentUserId, role));
     }
 
-    // STEP 7: Get tickets for logged-in user
-    @GetMapping("/me")
-    public ResponseEntity<List<TicketResponse>> getMyTickets(
-            @RequestParam("currentUserId") @NotNull Long currentUserId,
-            @RequestParam(value = "canViewAll", defaultValue = "false") boolean canViewAll) {
-        return ResponseEntity.ok(ticketService.getMyTickets(currentUserId, canViewAll));
-    }
-
-    // STEP 7: Get single ticket with attachments + comments if allowed
-    @GetMapping("/{id}")
-    public ResponseEntity<TicketResponse> getTicketById(
-            @PathVariable("id") Long id,
-            @RequestParam("currentUserId") @NotNull Long currentUserId,
-            @RequestParam(value = "canViewAll", defaultValue = "false") boolean canViewAll) {
-        return ResponseEntity.ok(ticketService.getTicketByIdForUser(id, currentUserId, canViewAll));
-    }
-
-    // STEP 7: Update status (TECHNICIAN/ADMIN)
     @PutMapping("/{id}/status")
     public ResponseEntity<TicketResponse> updateTicketStatus(
-            @PathVariable("id") Long id,
-            @RequestParam("currentUserId") @NotNull Long currentUserId,
-            @RequestParam(value = "isStaffOrAdmin", defaultValue = "false") boolean isStaffOrAdmin,
+            @PathVariable("id") String id,
+            @RequestParam("currentUserId") @NotNull String currentUserId,
+            @RequestParam(value = "role", defaultValue = "USER") TicketActorRole role,
             @Valid @RequestBody UpdateTicketStatusRequest request) {
-        return ResponseEntity.ok(ticketService.updateTicketStatus(id, request, currentUserId, isStaffOrAdmin));
+
+        return ResponseEntity.ok(ticketService.updateTicketStatus(id, request, currentUserId, role));
     }
 
-    // STEP 7: Add comment
+    @PutMapping("/{id}/start")
+    public ResponseEntity<TicketResponse> startWork(
+            @PathVariable("id") String id,
+            @RequestParam("currentUserId") @NotNull String currentUserId) {
+
+        return ResponseEntity.ok(ticketService.startWork(id, currentUserId));
+    }
+
     @PostMapping("/{id}/comments")
     public ResponseEntity<TicketCommentResponse> addComment(
-            @PathVariable("id") Long id,
-            @RequestParam("currentUserId") @NotNull Long currentUserId,
-            @RequestParam(value = "canViewAll", defaultValue = "false") boolean canViewAll,
+            @PathVariable("id") String id,
+            @RequestParam("currentUserId") @NotNull String currentUserId,
+            @RequestParam(value = "role", defaultValue = "USER") TicketActorRole role,
             @Valid @RequestBody CreateCommentRequest request) {
-        return ResponseEntity.ok(ticketService.addComment(id, request, currentUserId, canViewAll));
+
+        return ResponseEntity.ok(ticketService.addComment(id, request, currentUserId, role));
     }
 
-    // STEP 7: Delete comment (author or ADMIN/TECHNICIAN)
+    @PutMapping("/{id}/comments/{commentId}")
+    public ResponseEntity<TicketCommentResponse> updateComment(
+            @PathVariable("id") String ticketId,
+            @PathVariable("commentId") String commentId,
+            @RequestParam("currentUserId") @NotNull String currentUserId,
+            @Valid @RequestBody UpdateCommentRequest request) {
+
+        return ResponseEntity.ok(ticketService.updateComment(ticketId, commentId, request, currentUserId));
+    }
+
     @DeleteMapping("/{id}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(
-            @PathVariable("id") Long ticketId,
-            @PathVariable("commentId") Long commentId,
-            @RequestParam("currentUserId") @NotNull Long currentUserId,
-            @RequestParam(value = "isStaffOrAdmin", defaultValue = "false") boolean isStaffOrAdmin) {
-        ticketService.deleteComment(ticketId, commentId, currentUserId, isStaffOrAdmin);
+            @PathVariable("id") String ticketId,
+            @PathVariable("commentId") String commentId,
+            @RequestParam("currentUserId") @NotNull String currentUserId,
+            @RequestParam(value = "role", defaultValue = "USER") TicketActorRole role) {
+
+        ticketService.deleteComment(ticketId, commentId, currentUserId, role);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/attachments/{fileName:.+}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
+        try {
+            Resource resource = fileStorageService.loadFileAsResource(fileName);
+            String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 }

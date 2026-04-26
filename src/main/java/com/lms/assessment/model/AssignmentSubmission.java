@@ -1,13 +1,17 @@
 package com.lms.assessment.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "assignment_submissions")
+@Document(collection = "assignment_submissions")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,24 +19,17 @@ import java.time.LocalDateTime;
 public class AssignmentSubmission {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignment_id", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Assignment assignment;
+    @Indexed
+    private String assignmentId;
 
-    // Reference to external student/user ID
-    @Column(name = "student_id", nullable = false)
-    private Long studentId;
+    @Indexed
+    private String studentId;
 
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @CreatedDate
     private LocalDateTime submittedAt;
 
-    @Column(length = 2000)
     private String textAnswer;
 
     private String storedFilename;
@@ -45,10 +42,8 @@ public class AssignmentSubmission {
 
     private Integer obtainedMarks;
 
-    @Column(length = 2000)
     private String feedback;
 
-    // E.g. SUBMITTED, GRADED, LATE
-    @Column(nullable = false)
+    /** E.g. SUBMITTED, GRADED, LATE. */
     private String status;
 }

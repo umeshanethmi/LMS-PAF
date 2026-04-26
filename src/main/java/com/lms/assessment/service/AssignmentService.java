@@ -10,17 +10,17 @@ import java.util.List;
 
 public interface AssignmentService {
     AssignmentResponse createAssignment(CreateAssignmentRequest request);
-    AssignmentResponse getAssignmentById(Long id);
-    List<AssignmentResponse> getAssignmentsByCourse(Long courseId);
-    List<AssignmentResponse> getPublishedAssignmentsByCourse(Long courseId);
-    
-    AssignmentResponse updateAssignment(Long id, CreateAssignmentRequest request);
-    void deleteAssignment(Long id);
-    
+    AssignmentResponse getAssignmentById(String id);
+    List<AssignmentResponse> getAssignmentsByCourse(String courseId);
+    List<AssignmentResponse> getPublishedAssignmentsByCourse(String courseId);
+
+    AssignmentResponse updateAssignment(String id, CreateAssignmentRequest request);
+    void deleteAssignment(String id);
+
     AssignmentSubmissionResponse submitAssignment(SubmitAssignmentRequest request);
-    List<AssignmentSubmissionResponse> getSubmissionsByAssignment(Long assignmentId);
-    AssignmentSubmissionResponse getSubmissionById(Long submissionId);
-    
-    AssignmentSubmissionResponse gradeSubmission(Long submissionId, Integer obtainedMarks, String feedback);
-    Resource downloadSubmissionFile(Long submissionId);
+    List<AssignmentSubmissionResponse> getSubmissionsByAssignment(String assignmentId);
+    AssignmentSubmissionResponse getSubmissionById(String submissionId);
+
+    AssignmentSubmissionResponse gradeSubmission(String submissionId, Integer obtainedMarks, String feedback);
+    Resource downloadSubmissionFile(String submissionId);
 }

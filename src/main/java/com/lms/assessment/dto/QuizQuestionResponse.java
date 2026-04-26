@@ -12,8 +12,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuizQuestionResponse {
-    private Long id;
-    private Long quizId;
+    private String id;
+    private String quizId;
     private String questionText;
     private String questionType;
     private List<String> options;

@@ -1,36 +1,30 @@
 package com.lms.assessment.model.ticket;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "ticket_comments")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class TicketComment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ticket_id", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Ticket ticket;
+    private String ticketId;
 
-    @Column(nullable = false)
-    private Long authorUserId;
+    private String authorUserId;
 
-    @Column(nullable = false, length = 2000)
-    private String content;
+    private String author;
 
-    @CreationTimestamp
-    @Column(updatable = false)
+    private TicketActorRole authorRole;
+
+    private String message;
+
     private LocalDateTime createdAt;
 }

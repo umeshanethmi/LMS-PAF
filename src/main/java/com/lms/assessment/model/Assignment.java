@@ -1,16 +1,17 @@
 package com.lms.assessment.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
-@Entity
-@Table(name = "assignments")
+@Document(collection = "assignments")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,45 +19,31 @@ import java.util.List;
 public class Assignment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    // Reference to external course ID
-    @Column(nullable = false)
-    private Long courseId;
+    private String courseId;
 
-    // Reference to external instructor/user ID
-    @Column(nullable = false)
-    private Long createdByInstructorId;
+    private String createdByInstructorId;
 
-    @Column(nullable = false)
     private String title;
 
-    @Column(length = 2000)
     private String description;
 
-    @Column(nullable = false)
     private LocalDateTime dueDate;
 
-    // E.g., "application/pdf,application/msword"
+    /** E.g. "application/pdf,application/msword". */
     private String allowedFileTypes;
 
     private Long maxFileSizeBytes;
 
-    @Column(nullable = false)
     private Integer totalMarks;
 
-    @Column(nullable = false)
+    @Builder.Default
     private Boolean published = false;
 
-    @Builder.Default
-    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<AssignmentSubmission> submissions = new ArrayList<>();
-
-    @CreationTimestamp
-    @Column(updatable = false)
+    @CreatedDate
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 }

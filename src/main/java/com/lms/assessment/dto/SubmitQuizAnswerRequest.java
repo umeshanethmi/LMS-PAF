@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SubmitQuizAnswerRequest {
-    private Long attemptId;
-    private Long questionId;
+    private String attemptId;
+    private String questionId;
     private String givenAnswer;
 }

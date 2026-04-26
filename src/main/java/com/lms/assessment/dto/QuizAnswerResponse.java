@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuizAnswerResponse {
-    private Long id;
-    private Long attemptId;
-    private Long questionId;
+    private String id;
+    private String attemptId;
+    private String questionId;
     private String givenAnswer;
     private Boolean correct;
     private Integer awardedMarks;

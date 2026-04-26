@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateQuizQuestionRequest {
     
-    private Long quizId;
+    private String quizId;
     
     @NotBlank(message = "Question text cannot be blank")
     private String questionText;

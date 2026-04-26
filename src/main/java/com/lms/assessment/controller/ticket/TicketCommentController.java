@@ -27,7 +27,7 @@ public class TicketCommentController {
     }
 
     @GetMapping("/{ticketId}")
-    public ResponseEntity<List<TicketComment>> getComments(@PathVariable Long ticketId) {
+    public ResponseEntity<List<TicketComment>> getComments(@PathVariable String ticketId) {
         return ResponseEntity.ok(repository.findByTicketIdOrderByCreatedAtAsc(ticketId));
     }
 }

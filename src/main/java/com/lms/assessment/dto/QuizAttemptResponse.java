@@ -12,9 +12,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuizAttemptResponse {
-    private Long id;
-    private Long quizId;
-    private Long studentId;
+    private String id;
+    private String quizId;
+    private String studentId;
     private Integer attemptNumber;
     private LocalDateTime startedAt;
     private LocalDateTime submittedAt;

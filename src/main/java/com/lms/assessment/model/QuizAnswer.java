@@ -1,33 +1,25 @@
 package com.lms.assessment.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "quiz_answers")
+/**
+ * Embedded answer stored inside a {@link QuizAttempt} document. References
+ * the embedded question by its id (set by the service when questions were
+ * added to the parent {@link Quiz}).
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class QuizAnswer {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "attempt_id", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private QuizAttempt attempt;
+    private String questionId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_id", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private QuizQuestion question;
-
-    @Column(length = 2000)
     private String givenAnswer;
 
     private Boolean correct;

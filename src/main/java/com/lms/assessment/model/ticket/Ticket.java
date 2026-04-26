@@ -1,18 +1,18 @@
 package com.lms.assessment.model.ticket;
 
-import com.lms.assessment.model.ticket.Priority;
-import com.lms.assessment.model.ticket.TicketStatus;
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "tickets")
+@Document(collection = "tickets")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,52 +20,36 @@ import java.util.List;
 public class Ticket {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false)
-    private String title;
-
-    @Column(length = 4000)
-    private String description;
-
-    @Column(nullable = false)
-    private String category;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Priority priority;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TicketStatus status;
+    @Indexed
+    private String email;
 
     private String location;
 
-    private Long facilityId;
+    private String category;
 
-    private String preferredContact;
+    private String description;
 
-    @Column(nullable = false)
-    private Long reporterUserId;
+    private Priority priority;
 
-    private Long technicianUserId;
+    private String contactDetails;
 
-    @Column(length = 4000)
+    @Builder.Default
+    private TicketStatus status = TicketStatus.OPEN;
+
+    @Indexed
+    private String reporterUserId;
+
+    @Indexed
+    private String assignedTechnicianId;
+
     private String resolutionNotes;
 
     @Builder.Default
-    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TicketAttachment> attachments = new ArrayList<>();
-
-    @Builder.Default
-    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketComment> comments = new ArrayList<>();
 
-    @CreationTimestamp
-    @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
     private LocalDateTime updatedAt;
 }

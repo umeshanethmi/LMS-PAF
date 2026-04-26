@@ -17,30 +17,40 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateTicketRequest {
+    
+    @NotNull(message = "User ID is required")
+    private String currentUserId;
 
-    @NotBlank(message = "Title is required")
-    @Size(max = 255, message = "Title must be at most 255 characters")
-    private String title;
+    @NotBlank(message = "Email address is required")
+    @jakarta.validation.constraints.Email(message = "Invalid email format")
+    @Size(max = 255, message = "Email must be at most 255 characters")
+    private String email;
 
-    @NotBlank(message = "Description is required")
-    @Size(max = 4000, message = "Description must be at most 4000 characters")
-    private String description;
+    @NotBlank(message = "Location is required")
+    @Size(max = 255, message = "Location must be at most 255 characters")
+    private String location;
 
     @NotBlank(message = "Category is required")
     @Size(max = 255, message = "Category must be at most 255 characters")
     private String category;
 
+    @NotBlank(message = "Description is required")
+    @Size(max = 4000, message = "Description must be at most 4000 characters")
+    private String description;
+
     @NotNull(message = "Priority is required")
     private Priority priority;
 
-    @Size(max = 255, message = "Location must be at most 255 characters")
-    private String location;
+    @Size(max = 2000, message = "Contact details must be at most 2000 characters")
+    private String contactDetails;
 
-    private Long facilityId;
-
-    @Size(max = 255, message = "Preferred contact must be at most 255 characters")
+    @Size(max = 2000, message = "Legacy preferred contact must be at most 2000 characters")
     private String preferredContact;
 
-    // Files will be bound from multipart requests (e.g., name="files")
+    @Size(max = 3, message = "A ticket can have at most 3 attachments")
+    private List<@Size(max = 1000, message = "Attachment path must be at most 1000 characters") String> attachmentPaths;
+
+    // Optional multipart upload support for client compatibility.
+    @Size(max = 3, message = "A maximum of 3 files is allowed")
     private List<MultipartFile> files;
 }
