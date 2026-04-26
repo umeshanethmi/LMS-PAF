@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { useLocation, Navigate, Route, Routes } from 'react-router-dom';
+import { useLocation, Navigate, Route, Routes, Link } from 'react-router-dom';
 import './App.css';
 import IncidentTicketsPage from './pages/maintenance/IncidentTicketsPage';
 import DashboardPage from './pages/DashboardPage';
@@ -52,9 +52,12 @@ import LoginPage from './pages/auth/LoginPage';
 import LoginSuccess from './pages/auth/LoginSuccess';
 import RegisterPage from './pages/auth/RegisterPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider, useNotifications } from './context/NotificationContext';
+import NotificationPage from './pages/NotificationPage';
 
 const AppContent = () => {
   const { user, isAuthenticated } = useAuth();
+  const { unreadCount } = useNotifications();
   const location = useLocation();
   const isLoginPage = location.pathname === '/login' || location.pathname === '/login/success' || location.pathname === '/register';
 
@@ -94,10 +97,14 @@ const AppContent = () => {
           </div>
 
           <div className="flex items-center gap-6">
-            <button className="relative text-slate-500 hover:text-indigo-600 transition-colors">
+            <Link to="/notifications" className="relative text-slate-500 hover:text-indigo-600 transition-colors">
               <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-            </button>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center rounded-full border-2 border-white animate-bounce">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
             <div className="h-8 w-px bg-slate-200"></div>
             <div className="flex items-center gap-3">
               <div className="text-right">
@@ -124,12 +131,7 @@ const AppContent = () => {
               
               {/* Maintenance Ticketing Routes */}
               <Route path="/tickets" element={<IncidentTicketsPage />} />
-
-              {/* Redirects */}
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              
-              {/* Placeholder Routes for Sidebar items */}
-              <Route path="/notifications" element={<div className="p-4">Notifications Panel</div>} />
+              <Route path="/notifications" element={<NotificationPage />} />
               <Route path="/profile" element={<div className="p-4">User Profile Settings</div>} />
               <Route path="/settings" element={<div className="p-4">Global System Settings</div>} />
               
@@ -146,7 +148,9 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <NotificationProvider>
+        <AppContent />
+      </NotificationProvider>
     </AuthProvider>
   );
 }
