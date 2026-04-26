@@ -142,7 +142,9 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return jwtTokenProvider.generateToken(user);
-        /**
+    }
+
+    /**
      * Update user profile details and return a new JWT.
      */
     public String updateProfile(String email, String newName, String newImageUrl, String phone, String department, String bio) {
@@ -156,6 +158,7 @@ public class AuthService {
         if (bio != null) user.setBio(bio);
 
         userRepository.save(user);
+        log.info("Profile updated successfully for user: {}", email);
         return jwtTokenProvider.generateToken(user);
     }
 }

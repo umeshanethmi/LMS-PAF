@@ -55,6 +55,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import NotificationPage from './pages/NotificationPage';
 import ProfilePage from './pages/ProfilePage';
+import SecurityPage from './pages/SecurityPage';
 
 const AppContent = () => {
   const { user, isAuthenticated } = useAuth();
@@ -136,6 +137,7 @@ const AppContent = () => {
               
               {/* Profile & Notifications */}
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/security" element={<SecurityPage />} />
               <Route path="/notifications" element={<NotificationPage />} />
 
               {/* Maintenance Ticketing Routes */}

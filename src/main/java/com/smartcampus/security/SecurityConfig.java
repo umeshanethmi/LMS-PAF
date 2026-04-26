@@ -69,7 +69,8 @@ public class SecurityConfig {
                             "/favicon.ico",
                             "/oauth2/**",
                             "/login/**",
-                            "/api/auth/**"
+                            "/api/auth/login",
+                            "/api/auth/register"
                     ).permitAll()
 
                     // Allow preflight OPTIONS requests through

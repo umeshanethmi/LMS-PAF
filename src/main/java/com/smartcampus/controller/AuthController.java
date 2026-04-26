@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -43,6 +45,9 @@ public class AuthController {
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(@Valid @RequestBody UpdateProfileRequest request, 
                                            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "User not authenticated"));
+        }
         try {
             String token = authService.updateProfile(
                 userDetails.getUsername(), 
@@ -60,18 +65,18 @@ public class AuthController {
 
     @Data
     public static class UpdateProfileRequest {
-        @jakarta.validation.constraints.NotBlank(message = "Name is required")
-        @jakarta.validation.constraints.Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
+        @NotBlank(message = "Name is required")
+        @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
         private String name;
 
         private String imageUrl;
 
-        @jakarta.validation.constraints.Pattern(regexp = "^$|[0-9\\+\\-\\s\\(\\)]{7,20}", message = "Invalid phone number format")
+        @Pattern(regexp = "^$|[0-9\\+\\-\\s\\(\\)]{7,20}", message = "Invalid phone number format")
         private String phone;
 
         private String department;
 
-        @jakarta.validation.constraints.Size(max = 500, message = "Bio cannot exceed 500 characters")
+        @Size(max = 1000, message = "Bio cannot exceed 1000 characters")
         private String bio;
     }
 

@@ -40,7 +40,9 @@ public class SmartCampusGlobalExceptionHandler {
             fieldErrors.put(field, message);
         });
 
-        return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed", fieldErrors.toString());
+        String summary = fieldErrors.values().stream().findFirst().orElse("Validation failed");
+
+        return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed", summary);
     }
 
     // ── 400 Bad Request – Business rule violations ─────────────────────────────
@@ -70,9 +72,9 @@ public class SmartCampusGlobalExceptionHandler {
     // ── 500 Internal Server Error – Unexpected ────────────────────────────────
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
-        log.error("Unhandled exception", ex);
+        log.error("Unhandled exception: ", ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error",
-                "An unexpected error occurred. Please try again.");
+                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred.");
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────

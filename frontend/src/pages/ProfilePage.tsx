@@ -4,11 +4,7 @@ import {
   Mail, 
   Shield, 
   Camera, 
-  ExternalLink, 
   Clock, 
-  Award,
-  Settings,
-  Bell,
   Lock,
   Smartphone,
   Phone,
@@ -21,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 const ProfilePage: React.FC = () => {
   const { user, token, login } = useAuth();
@@ -51,30 +48,64 @@ const ProfilePage: React.FC = () => {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) newErrors.name = "Name is required";
-    else if (formData.name.length < 2) newErrors.name = "Name is too short";
     
-    if (formData.phone && !/^[0-9+\-\s()]{7,20}$/.test(formData.phone)) {
-      newErrors.phone = "Invalid phone number format";
+    // Name validation
+    if (!formData.name || !formData.name.trim()) {
+      newErrors.name = "Name is required";
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = "Name must be at least 2 characters";
     }
     
-    if (formData.imageUrl && !/^https?:\/\/.+/.test(formData.imageUrl)) {
-      newErrors.imageUrl = "Must be a valid URL";
+    // Phone validation (more robust regex)
+    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/;
+    if (formData.phone && formData.phone.trim() !== "" && !phoneRegex.test(formData.phone)) {
+      newErrors.phone = "Please enter a valid phone number";
+    }
+    
+    // URL validation (now supports data:image/base64 as well)
+    const urlRegex = /^(https?:\/\/|data:image\/)/;
+    if (formData.imageUrl && formData.imageUrl.trim() !== "" && !urlRegex.test(formData.imageUrl)) {
+      newErrors.imageUrl = "Please enter a valid image URL or Data URI";
     }
 
-    if (formData.bio && formData.bio.length > 500) {
-      newErrors.bio = "Bio must be under 500 characters";
+    if (formData.bio && formData.bio.length > 1000) {
+      newErrors.bio = "Bio is too long (max 1000 chars)";
     }
 
+    console.log("Validation errors:", newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
   
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token || !validate()) return;
+    console.log("Submitting form with data:", formData);
+    
+    if (!token) {
+      setErrors({ submit: "You are not authenticated. Please login again." });
+      return;
+    }
+
+    if (!validate()) {
+      console.log("Validation failed");
+      return;
+    }
     
     setIsSubmitting(true);
+    setErrors({}); // Clear previous errors
+    
     try {
       const response = await fetch('http://localhost:8080/api/auth/profile', {
         method: 'PUT',
@@ -87,17 +118,18 @@ const ProfilePage: React.FC = () => {
       
       if (response.ok) {
         const data = await response.json();
-        login(data.token); // Re-login with new token to refresh context
+        login(data.token);
         setIsEditing(false);
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 4000);
       } else {
         const data = await response.json();
-        setErrors({ submit: data.message || "Failed to update profile" });
+        console.error("Server validation failed:", data);
+        setErrors({ submit: data.message || "Server rejected the update. Please check your inputs." });
       }
     } catch (error) {
-      console.error('Failed to update profile:', error);
-      setErrors({ submit: "Network error. Please try again." });
+      console.error('Network error during profile update:', error);
+      setErrors({ submit: "Unable to reach the server. Please check your connection." });
     } finally {
       setIsSubmitting(false);
     }
@@ -250,9 +282,9 @@ const ProfilePage: React.FC = () => {
                 <span className="text-slate-400 text-xs font-bold">Just Now</span>
               </div>
             </div>
-            <button className="mt-8 w-full py-4 bg-white text-slate-900 rounded-2xl font-black hover:bg-indigo-50 transition-colors">
+            <Link to="/security" className="mt-8 w-full py-4 bg-white text-slate-900 rounded-2xl font-black hover:bg-indigo-50 transition-colors block text-center">
               Account Security Dashboard
-            </button>
+            </Link>
           </div>
           <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px]"></div>
         </div>
@@ -292,7 +324,7 @@ const ProfilePage: React.FC = () => {
                     <input 
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
                       className={`w-full pl-14 pr-5 py-5 bg-slate-50 border-2 rounded-[24px] outline-none transition-all text-slate-800 font-bold ${errors.name ? 'border-rose-200 focus:border-rose-500 focus:ring-rose-50' : 'border-transparent focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50'}`}
                       placeholder="Your full name"
                     />
@@ -308,7 +340,7 @@ const ProfilePage: React.FC = () => {
                     <input 
                       type="text"
                       value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
                       className={`w-full pl-14 pr-5 py-5 bg-slate-50 border-2 rounded-[24px] outline-none transition-all text-slate-800 font-bold ${errors.phone ? 'border-rose-200 focus:border-rose-500 focus:ring-rose-50' : 'border-transparent focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50'}`}
                       placeholder="+94 7X XXX XXXX"
                     />
@@ -324,7 +356,7 @@ const ProfilePage: React.FC = () => {
                     <input 
                       type="text"
                       value={formData.department}
-                      onChange={(e) => setFormData({...formData, department: e.target.value})}
+                      onChange={(e) => handleInputChange('department', e.target.value)}
                       className="w-full pl-14 pr-5 py-5 bg-slate-50 border-2 border-transparent rounded-[24px] outline-none focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50 transition-all text-slate-800 font-bold"
                       placeholder="e.g. Faculty of Computing"
                     />
@@ -339,7 +371,7 @@ const ProfilePage: React.FC = () => {
                     <input 
                       type="url"
                       value={formData.imageUrl}
-                      onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                      onChange={(e) => handleInputChange('imageUrl', e.target.value)}
                       className={`w-full pl-14 pr-5 py-5 bg-slate-50 border-2 rounded-[24px] outline-none transition-all text-slate-800 font-bold ${errors.imageUrl ? 'border-rose-200 focus:border-rose-500 focus:ring-rose-50' : 'border-transparent focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50'}`}
                       placeholder="https://images.com/photo.jpg"
                     />
@@ -355,7 +387,7 @@ const ProfilePage: React.FC = () => {
                   <Quote className={`absolute left-5 top-6 w-5 h-5 transition-colors ${errors.bio ? 'text-rose-500' : 'text-slate-400 group-focus-within:text-indigo-600'}`} />
                   <textarea 
                     value={formData.bio}
-                    onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                    onChange={(e) => handleInputChange('bio', e.target.value)}
                     rows={4}
                     className={`w-full pl-14 pr-5 py-5 bg-slate-50 border-2 rounded-[24px] outline-none transition-all text-slate-800 font-bold resize-none ${errors.bio ? 'border-rose-200 focus:border-rose-500 focus:ring-rose-50' : 'border-transparent focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50'}`}
                     placeholder="Tell us about yourself..."
