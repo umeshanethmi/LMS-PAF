@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 import CreateAssignment from './pages/instructor/CreateAssignment';
 import CreateQuiz from './pages/instructor/CreateQuiz';
@@ -8,9 +7,10 @@ import QuizSubmissions from './pages/instructor/QuizSubmissions';
 import StudentTaskPortal from './pages/student/StudentTaskPortal';
 import SubmitAssignment from './pages/student/SubmitAssignment';
 import QuizAttempt from './pages/student/QuizAttempt';
-import ResourceCatalogue from './pages/resources/ResourceCatalogue';
-import ResourceDetail from './pages/resources/ResourceDetail';
-import ResourceForm from './pages/resources/ResourceForm';
+import LoginPage from './pages/auth/LoginPage';
+import ResourcesPage from './pages/ResourcesPage';
+import BookingAssistantPage from './pages/BookingAssistantPage';
+import MyBookingsPage from './pages/MyBookingsPage';
 import { useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -48,6 +48,8 @@ function Navbar() {
               {role === 'instructor' && navLink('/instructor', 'Dashboard')}
               {role === 'student' && navLink('/student', 'Dashboard')}
               {role && navLink('/resources', 'Resources')}
+              {role && navLink('/booking', 'Book')}
+              {role && navLink('/my-bookings', 'My Bookings')}
             </div>
           </div>
 
@@ -75,113 +77,25 @@ function Navbar() {
 }
 
 function Home() {
-  const { login, role, user } = useAuth();
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const { role, user } = useAuth();
 
-  if (role) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500">
-            You are logged in as <span className="font-semibold">{user?.username}</span>
-            {' '}({user?.role}).
-          </p>
-          <Link
-            to={role === 'instructor' ? '/instructor' : '/student'}
-            className="mt-4 inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
-          >
-            Go to Dashboard →
-          </Link>
-        </div>
-      </div>
-    );
+  if (!role) {
+    return <Navigate to="/login" replace />;
   }
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSubmitting(true);
-    try {
-      await login(identifier.trim(), password);
-    } catch (err: unknown) {
-      const message = err && typeof err === 'object' && 'response' in err
-        ? 'Invalid email or password.'
-        : 'Login failed. Make sure the backend is running.';
-      setError(message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl shadow-lg mb-4">
-            <span className="text-white text-2xl font-bold">L</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">LMS PAF</h1>
-          <p className="text-gray-500 mt-2 text-sm">Learning Management System</p>
-        </div>
-
-        <form
-          onSubmit={onSubmit}
-          className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-5"
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-gray-500">
+          You are logged in as <span className="font-semibold">{user?.username}</span>
+          {' '}({user?.role}).
+        </p>
+        <Link
+          to={role === 'instructor' ? '/instructor' : '/student'}
+          className="mt-4 inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
         >
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800">Sign in</h2>
-            <p className="text-sm text-gray-500 mt-1">Use your email or username to continue</p>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Email or username</label>
-              <input
-                type="text"
-                autoComplete="username"
-                value={identifier}
-                onChange={e => setIdentifier(e.target.value)}
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="admin@sliit.lk"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 transition-colors"
-          >
-            {submitting ? 'Signing in…' : 'Sign in'}
-          </button>
-
-          <p className="text-xs text-gray-400 text-center pt-2 border-t border-gray-100">
-            Try <code className="bg-gray-100 px-1 rounded">admin@sliit.lk / Admin123</code>,
-            {' '}<code className="bg-gray-100 px-1 rounded">instructor / instructor123</code>, or
-            {' '}<code className="bg-gray-100 px-1 rounded">student / student123</code>
-          </p>
-        </form>
+          Go to Dashboard →
+        </Link>
       </div>
     </div>
   );
@@ -193,7 +107,9 @@ function InstructorDashboard() {
     { to: '/instructor/create-quiz', icon: '📋', title: 'Create Quiz', desc: 'Build a quiz with custom questions' },
     { to: '/instructor/assignment-submissions', icon: '📥', title: 'Assignment Submissions', desc: 'Review and grade submissions' },
     { to: '/instructor/quiz-submissions', icon: '📊', title: 'Quiz Results', desc: 'View student quiz attempts' },
-    { to: '/resources', icon: '🏛️', title: 'Manage Resources', desc: 'Facilities & assets catalogue' },
+    { to: '/resources', icon: '🏛️', title: 'Resources', desc: 'Browse halls, labs and equipment' },
+    { to: '/booking', icon: '🤖', title: 'Booking Assistant', desc: 'Chat-driven smart booking' },
+    { to: '/my-bookings', icon: '📅', title: 'My Bookings', desc: 'See and cancel your bookings' },
   ];
 
   return (
@@ -225,7 +141,9 @@ function InstructorDashboard() {
 function StudentDashboard() {
   const cards = [
     { to: '/student/course/1/tasks', icon: '📚', title: 'My Tasks', desc: 'View assignments and quizzes for Course 1' },
-    { to: '/resources', icon: '🏛️', title: 'Browse Resources', desc: 'Find available facilities and equipment' },
+    { to: '/resources', icon: '🏛️', title: 'Browse Resources', desc: 'Find available halls and labs' },
+    { to: '/booking', icon: '🤖', title: 'Booking Assistant', desc: 'Chat-driven smart booking' },
+    { to: '/my-bookings', icon: '📅', title: 'My Bookings', desc: 'See and cancel your bookings' },
   ];
 
   return (
@@ -262,6 +180,7 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
               <Route path="/instructor" element={<InstructorDashboard />} />
               <Route path="/instructor/create-assignment" element={<CreateAssignment />} />
@@ -276,12 +195,9 @@ function App() {
               <Route path="/student/quiz/:quizId" element={<QuizAttempt />} />
             </Route>
             <Route element={<ProtectedRoute allowedRoles={['instructor', 'student']} />}>
-              <Route path="/resources" element={<ResourceCatalogue />} />
-              <Route path="/resources/:id" element={<ResourceDetail />} />
-            </Route>
-            <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
-              <Route path="/resources/new" element={<ResourceForm />} />
-              <Route path="/resources/:id/edit" element={<ResourceForm />} />
+              <Route path="/resources" element={<ResourcesPage />} />
+              <Route path="/booking" element={<BookingAssistantPage />} />
+              <Route path="/my-bookings" element={<MyBookingsPage />} />
             </Route>
           </Routes>
         </main>

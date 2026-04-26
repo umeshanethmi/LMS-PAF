@@ -40,11 +40,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/resources", "/api/resources/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/booking-chat").permitAll()
                 .requestMatchers("/api/users/**").hasAnyRole("SUPERADMIN", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/resources").hasAnyRole("SUPERADMIN", "ADMIN", "INSTRUCTOR")
                 .requestMatchers(HttpMethod.PUT, "/api/resources/**").hasAnyRole("SUPERADMIN", "ADMIN", "INSTRUCTOR")
                 .requestMatchers(HttpMethod.PATCH, "/api/resources/**").hasAnyRole("SUPERADMIN", "ADMIN", "INSTRUCTOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/resources/**").hasAnyRole("SUPERADMIN", "ADMIN")
+                .requestMatchers("/api/bookings/**", "/api/notifications/**", "/api/unavailability/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
