@@ -24,7 +24,20 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [simulationRole, setSimulationRole] = useState<UserRole>(null);
+  const [simulationRole, setSimulationRoleState] = useState<UserRole>(() => {
+    const saved = localStorage.getItem('simulationRole');
+    return (saved as UserRole) || null;
+  });
+
+  const setSimulationRole = (role: UserRole) => {
+    setSimulationRoleState(role);
+    if (role) {
+      localStorage.setItem('simulationRole', role);
+    } else {
+      localStorage.removeItem('simulationRole');
+    }
+  };
+
   const [user, setUser] = useState<User | null>(() => {
     try {
       const savedUser = localStorage.getItem('user');
