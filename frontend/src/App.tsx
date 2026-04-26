@@ -1,31 +1,78 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Sidebar from './components/common/Sidebar';
+import { Component } from 'react';
+import { useLocation, Navigate, Route, Routes, Link } from 'react-router-dom';
+import './App.css';
+import IncidentTicketsPage from './pages/maintenance/IncidentTicketsPage';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
-import IncidentTicketsPage from './pages/maintenance/IncidentTicketsPage';
-import NotificationsPage from './pages/NotificationsPage';
-import ProfilePage from './pages/ProfilePage';
-import SettingsPage from './pages/SettingsPage';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
 import BookingAssistantPage from './pages/BookingAssistantPage';
 import MyBookingsPage from './pages/MyBookingsPage';
-import { useAuth } from './contexts/AuthContext';
-import './App.css';
+import type { ErrorInfo, ReactNode } from 'react';
+import Sidebar from './components/common/Sidebar';
+import { Bell, Search, User } from 'lucide-react';
 
-const AUTH_ROUTES = ['/login', '/register'];
+interface AppErrorBoundaryProps {
+  children: ReactNode;
+}
 
-function AppShell() {
+interface AppErrorBoundaryState {
+  hasError: boolean;
+  message: string;
+}
+
+class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
+  constructor(props: AppErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, message: '' };
+  }
+
+  static getDerivedStateFromError(error: Error): AppErrorBoundaryState {
+    return { hasError: true, message: error.message || 'Unknown runtime error' };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Runtime UI error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-lg border border-rose-300 bg-rose-50 p-4 text-left text-sm text-rose-700">
+          <p className="font-semibold">Frontend runtime error</p>
+          <p className="mt-1 break-words">{this.state.message}</p>
+          <p className="mt-2 text-xs">Open browser console for stack trace details.</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+import LoginPage from './pages/auth/LoginPage';
+import LoginSuccess from './pages/auth/LoginSuccess';
+import RegisterPage from './pages/auth/RegisterPage';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider, useNotifications } from './context/NotificationContext';
+import NotificationPage from './pages/NotificationPage';
+import ProfilePage from './pages/ProfilePage';
+import SecurityPage from './pages/SecurityPage';
+
+const AppContent = () => {
+  const { user, isAuthenticated } = useAuth();
+  const { unreadCount } = useNotifications();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
-  const isAuthRoute = AUTH_ROUTES.includes(location.pathname);
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/login/success' || location.pathname === '/register';
 
-  if (isAuthRoute) {
+  if (isLoginPage) {
     return (
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-      </Routes>
+      <AppErrorBoundary>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login/success" element={<LoginSuccess />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AppErrorBoundary>
     );
   }
 
@@ -35,28 +82,95 @@ function AppShell() {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-inter">
+      {/* Sidebar Component */}
       <Sidebar />
-      <main className="flex-1 overflow-y-auto p-8 relative">
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/admin" element={<DashboardPage overrideRole="ADMIN" />} />
-          <Route path="/tech" element={<DashboardPage overrideRole="TECHNICIAN" />} />
-          <Route path="/users" element={<UserManagementPage />} />
-          <Route path="/tickets" element={<IncidentTicketsPage />} />
-          <Route path="/book" element={<BookingAssistantPage />} />
-          <Route path="/my-bookings" element={<MyBookingsPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Header */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
+          <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 w-96 max-w-lg">
+            <Search className="w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search anything..." 
+              className="bg-transparent border-none outline-none text-sm text-slate-600 w-full placeholder:text-slate-400"
+            />
+          </div>
+
+          <div className="flex items-center gap-6">
+            <Link to="/notifications" className="relative text-slate-500 hover:text-indigo-600 transition-colors">
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center rounded-full border-2 border-white animate-bounce">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
+            <div className="h-8 w-px bg-slate-200"></div>
+            <Link to="/profile" className="flex items-center gap-3 pl-2 group transition-all">
+              <div className="text-right">
+                <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight">
+                  {user?.name?.split(' ')[0] || 'User'}
+                </p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  {user?.role || 'MEMBER'}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 overflow-hidden shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all">
+                {user?.picture ? (
+                  <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-5 h-5 text-indigo-400" />
+                )}
+              </div>
+            </Link>
+          </div>
+        </header>
+
+        {/* Scrollable Viewport */}
+        <main className="flex-1 overflow-y-auto p-8">
+          <AppErrorBoundary>
+            <Routes>
+              {/* Main Routes */}
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/admin" element={<DashboardPage overrideRole="ADMIN" />} />
+              <Route path="/tech" element={<DashboardPage overrideRole="TECHNICIAN" />} />
+              <Route path="/users" element={<UserManagementPage />} />
+              
+              {/* Booking System */}
+              <Route path="/book" element={<BookingAssistantPage />} />
+              <Route path="/my-bookings" element={<MyBookingsPage />} />
+              
+              {/* Profile & Notifications */}
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/security" element={<SecurityPage />} />
+              <Route path="/notifications" element={<NotificationPage />} />
+
+              {/* Maintenance Ticketing Routes */}
+              <Route path="/tickets" element={<IncidentTicketsPage />} />
+
+              {/* Global Settings Placeholder */}
+              <Route path="/settings" element={<div className="p-4">Global System Settings</div>} />
+              
+              {/* Catch-all fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AppErrorBoundary>
+        </main>
+      </div>
     </div>
   );
 }
 
 function App() {
-  return <AppShell />;
+  return (
+    <AuthProvider>
+      <NotificationProvider>
+        <AppContent />
+      </NotificationProvider>
+    </AuthProvider>
+  );
 }
 
 export default App;
