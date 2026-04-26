@@ -32,6 +32,7 @@ public class User {
     private String imageUrl;
     private String provider;
     private String providerId;
+    private String password;
 
     private Set<Role> roles;
 

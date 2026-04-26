@@ -50,12 +50,13 @@ class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundary
 
 import LoginPage from './pages/auth/LoginPage';
 import LoginSuccess from './pages/auth/LoginSuccess';
+import RegisterPage from './pages/auth/RegisterPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const AppContent = () => {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
-  const isLoginPage = location.pathname === '/login' || location.pathname === '/login/success';
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/login/success' || location.pathname === '/register';
 
   if (isLoginPage) {
     return (
@@ -63,6 +64,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/login/success" element={<LoginSuccess />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AppErrorBoundary>

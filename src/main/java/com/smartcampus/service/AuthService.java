@@ -5,7 +5,9 @@ import com.smartcampus.repository.UserRepository;
 import com.smartcampus.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.Set;
 
 import java.util.Optional;
 
@@ -24,6 +26,42 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final PasswordEncoder passwordEncoder;
+
+    // ── Manual Authentication ──────────────────────────────────────────────────
+
+    /**
+     * Register a new user with a password.
+     */
+    public User register(String name, String email, String password) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("Email already in use");
+        }
+
+        User user = User.builder()
+                .name(name)
+                .email(email)
+                .password(passwordEncoder.encode(password))
+                .provider("LOCAL")
+                .roles(Set.of(User.Role.USER))
+                .build();
+
+        return userRepository.save(user);
+    }
+
+    /**
+     * Authenticate a user by email and password.
+     */
+    public String authenticate(String email, String password) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        return jwtTokenProvider.generateTokenFromUsername(email);
+    }
 
     // ── User Retrieval ────────────────────────────────────────────────────────
 

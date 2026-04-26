@@ -14,13 +14,15 @@ import {
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Ticket, label: 'Maintenance', path: '/tickets' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    ...(isAdmin ? [{ icon: Settings, label: 'Settings', path: '/settings' }] : []),
   ];
 
   return (
