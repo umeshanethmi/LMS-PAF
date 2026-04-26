@@ -8,6 +8,8 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import BookingAssistantPage from './pages/BookingAssistantPage';
+import MyBookingsPage from './pages/MyBookingsPage';
 import './App.css';
 
 const AUTH_ROUTES = ['/login', '/register'];
@@ -35,6 +37,8 @@ function AppShell() {
           <Route path="/tech" element={<DashboardPage overrideRole="TECHNICIAN" />} />
           <Route path="/users" element={<UserManagementPage />} />
           <Route path="/tickets" element={<IncidentTicketsPage />} />
+          <Route path="/book" element={<BookingAssistantPage />} />
+          <Route path="/my-bookings" element={<MyBookingsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />

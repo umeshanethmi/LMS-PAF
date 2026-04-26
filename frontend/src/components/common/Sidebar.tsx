@@ -10,7 +10,9 @@ import {
   ShieldCheck,
   Inbox,
   Briefcase,
-  LogOut
+  LogOut,
+  Bot,
+  CalendarCheck
 } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,6 +22,8 @@ function Sidebar() {
   
   const menuItems = [
     { icon: LayoutGrid, label: 'Dashboard', path: '/' },
+    { icon: Bot, label: 'Book a Room', path: '/book' },
+    { icon: CalendarCheck, label: 'My Bookings', path: '/my-bookings' },
     { 
       icon: Inbox, 
       label: role === 'ADMIN' ? 'Manage Incidents' : role === 'TECHNICIAN' ? 'Assigned Tasks' : 'Student Tickets', 
