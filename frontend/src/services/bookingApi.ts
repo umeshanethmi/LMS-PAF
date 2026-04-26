@@ -1,0 +1,59 @@
+import apiClient from './apiClient';
+
+export interface SlotSuggestion {
+  resourceId: string;
+  resourceCode: string;
+  resourceName: string;
+  building: string;
+  startTime: string;
+  endTime: string;
+  availableHours: number;
+  capacity: number;
+  note: string;
+}
+
+export interface ChatResponse {
+  reply: string;
+  suggestions: SlotSuggestion[];
+}
+
+export interface BookingPayload {
+  resourceId: string;
+  startTime: string;
+  endTime: string;
+  partySize?: number;
+  purpose?: string;
+}
+
+export interface BookingRecord {
+  id: string;
+  resourceId: string;
+  resourceCode: string;
+  resourceName: string;
+  building: string;
+  userId: string;
+  startTime: string;
+  endTime: string;
+  partySize: number;
+  purpose: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const bookingApi = {
+  chat: (message: string, userId?: string, preferredDate?: string) =>
+    apiClient.post<ChatResponse>('/booking-chat', { message, userId, preferredDate }),
+
+  create: (payload: BookingPayload) =>
+    apiClient.post<BookingRecord>('/bookings', payload),
+
+  myBookings: () =>
+    apiClient.get<BookingRecord[]>('/bookings?mine=true'),
+
+  cancel: (id: string) =>
+    apiClient.put<BookingRecord>(`/bookings/${id}/cancel`),
+
+  getResources: () =>
+    apiClient.get('/resources'),
+};

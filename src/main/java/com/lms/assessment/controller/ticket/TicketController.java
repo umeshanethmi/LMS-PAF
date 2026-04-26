@@ -47,6 +47,24 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getTicketById(id));
     }
 
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<TicketResponse> updateTicket(
+            @PathVariable("id") String id,
+            @RequestParam("currentUserId") @NotNull String currentUserId,
+            @Valid @ModelAttribute UpdateTicketRequest request) {
+
+        return ResponseEntity.ok(ticketService.updateTicket(id, request, currentUserId));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTicket(
+            @PathVariable("id") String id,
+            @RequestParam("currentUserId") @NotNull String currentUserId) {
+
+        ticketService.deleteTicket(id, currentUserId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/{id}/assign")
     public ResponseEntity<TicketResponse> assignTechnician(
             @PathVariable("id") String id,

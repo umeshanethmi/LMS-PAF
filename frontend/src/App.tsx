@@ -4,6 +4,8 @@ import './App.css';
 import IncidentTicketsPage from './pages/maintenance/IncidentTicketsPage';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
+import BookingAssistantPage from './pages/BookingAssistantPage';
+import MyBookingsPage from './pages/MyBookingsPage';
 import type { ErrorInfo, ReactNode } from 'react';
 import Sidebar from './components/common/Sidebar';
 import { Bell, Search, User } from 'lucide-react';
@@ -45,7 +47,6 @@ class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundary
     return this.props.children;
   }
 }
-
 
 import LoginPage from './pages/auth/LoginPage';
 import LoginSuccess from './pages/auth/LoginSuccess';
@@ -136,6 +137,10 @@ const AppContent = () => {
               <Route path="/admin" element={<DashboardPage overrideRole="ADMIN" />} />
               <Route path="/tech" element={<DashboardPage overrideRole="TECHNICIAN" />} />
               <Route path="/users" element={<UserManagementPage />} />
+              
+              {/* Booking System */}
+              <Route path="/book" element={<BookingAssistantPage />} />
+              <Route path="/my-bookings" element={<MyBookingsPage />} />
               
               {/* Profile & Notifications */}
               <Route path="/profile" element={<ProfilePage />} />
