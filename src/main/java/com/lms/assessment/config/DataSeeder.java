@@ -66,12 +66,33 @@ public class DataSeeder implements ApplicationRunner {
                 }
             }
 
+            // Equipment — bookable items that aren't tied to a specific room.
+            String[][] equipment = {
+                {"EQ-PROJ-01", "Portable Projector 01", "Full-HD short-throw projector with HDMI + USB-C inputs."},
+                {"EQ-CAM-01",  "Video Camera Kit 01",   "DSLR + tripod + lavalier mic, suitable for lecture recording."},
+                {"EQ-MIC-01",  "Wireless Microphone Set", "Two-channel wireless mic kit with receiver and stand."},
+                {"EQ-LAPTOP-01", "Loaner Laptop 01",    "Windows 11 laptop pre-installed with VS Code, IntelliJ and Docker."},
+                {"EQ-VR-01",   "VR Headset Set",        "Meta Quest 3 + controllers + charging dock for AR/VR labs."},
+            };
+            for (String[] e : equipment) {
+                String code = e[0];
+                if (repo.existsByCode(code)) continue;
+                toSave.add(CampusResource.builder()
+                        .code(code)
+                        .name(e[1])
+                        .type(CampusResource.ResourceType.EQUIPMENT)
+                        .capacity(1)
+                        .description(e[2])
+                        .active(true).createdAt(now).updatedAt(now).build());
+            }
+
             if (!toSave.isEmpty()) {
                 repo.saveAll(toSave);
-                log.info("DataSeeder: inserted {} resources ({} halls, {} labs)",
-                        toSave.size(),
-                        toSave.stream().filter(r -> r.getType() == CampusResource.ResourceType.HALL).count(),
-                        toSave.stream().filter(r -> r.getType() == CampusResource.ResourceType.LAB).count());
+                long halls = toSave.stream().filter(r -> r.getType() == CampusResource.ResourceType.HALL).count();
+                long labs = toSave.stream().filter(r -> r.getType() == CampusResource.ResourceType.LAB).count();
+                long equipmentCount = toSave.stream().filter(r -> r.getType() == CampusResource.ResourceType.EQUIPMENT).count();
+                log.info("DataSeeder: inserted {} resources ({} halls, {} labs, {} equipment)",
+                        toSave.size(), halls, labs, equipmentCount);
             } else {
                 log.info("DataSeeder: all campus resources already present - skipping.");
             }
