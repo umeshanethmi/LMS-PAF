@@ -5,6 +5,7 @@ import {
   Shield, 
   Camera, 
   Clock, 
+  Award,
   Lock,
   Smartphone,
   Phone,
