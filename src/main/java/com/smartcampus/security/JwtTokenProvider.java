@@ -127,10 +127,10 @@ public class JwtTokenProvider {
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+        return Jwts.parser()
+                .verifyWith(secretKey)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
