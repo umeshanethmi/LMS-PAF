@@ -7,6 +7,9 @@ interface User {
     name: string;
     role: string;
     picture?: string;
+    phone?: string;
+    department?: string;
+    bio?: string;
 }
 
 interface AuthContextType {
@@ -37,7 +40,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         email: decoded.sub,
                         name: decoded.name || decoded.sub?.split('@')[0] || 'User',
                         role: decoded.role || 'USER',
-                        picture: decoded.picture
+                        picture: decoded.picture,
+                        phone: decoded.phone,
+                        department: decoded.department,
+                        bio: decoded.bio
                     });
                 }
             } catch (error) {

@@ -34,6 +34,10 @@ public class User {
     private String providerId;
     private String password;
 
+    private String phone;
+    private String department;
+    private String bio;
+
     private Set<Role> roles;
 
     @CreatedDate

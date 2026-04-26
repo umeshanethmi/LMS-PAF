@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User as UserIcon, 
   Mail, 
@@ -10,14 +10,99 @@ import {
   Settings,
   Bell,
   Lock,
-  Smartphone
+  Smartphone,
+  Phone,
+  Building2,
+  Quote,
+  X,
+  Plus,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 
 const ProfilePage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, token, login } = useAuth();
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    imageUrl: '',
+    phone: '',
+    department: '',
+    bio: ''
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Sync form data with user state
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        imageUrl: user.picture || '',
+        phone: user.phone || '',
+        department: user.department || '',
+        bio: user.bio || ''
+      });
+    }
+  }, [user]);
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    else if (formData.name.length < 2) newErrors.name = "Name is too short";
+    
+    if (formData.phone && !/^[0-9+\-\s()]{7,20}$/.test(formData.phone)) {
+      newErrors.phone = "Invalid phone number format";
+    }
+    
+    if (formData.imageUrl && !/^https?:\/\/.+/.test(formData.imageUrl)) {
+      newErrors.imageUrl = "Must be a valid URL";
+    }
+
+    if (formData.bio && formData.bio.length > 500) {
+      newErrors.bio = "Bio must be under 500 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !validate()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        login(data.token); // Re-login with new token to refresh context
+        setIsEditing(false);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 4000);
+      } else {
+        const data = await response.json();
+        setErrors({ submit: data.message || "Failed to update profile" });
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      setErrors({ submit: "Network error. Please try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const stats = [
     { label: 'Account Type', value: user?.provider === 'GOOGLE' ? 'Google SSO' : 'Local Account', icon: Shield, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'Member Since', value: user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy') : 'Recently', icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -26,75 +111,103 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+      {/* Success Toast */}
+      {showSuccess && (
+        <div className="fixed top-24 right-8 z-[60] animate-in slide-in-from-right-10 fade-in duration-300">
+          <div className="bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3">
+            <CheckCircle2 className="w-6 h-6" />
+            <p className="font-bold">Profile updated successfully!</p>
+          </div>
+        </div>
+      )}
+
       {/* Header / Cover Section */}
-      <div className="relative h-48 rounded-[32px] bg-gradient-to-r from-indigo-600 to-violet-600 overflow-hidden shadow-lg shadow-indigo-100">
+      <div className="relative h-56 rounded-[40px] bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 overflow-hidden shadow-2xl shadow-indigo-100">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_2px_2px,rgba(255,255,255,0.15)_1px,transparent_0)] bg-[length:32px_32px]"></div>
         </div>
       </div>
 
       {/* Profile Info Card */}
-      <div className="relative -mt-24 px-8">
-        <div className="bg-white rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-100 p-8">
-          <div className="flex flex-col md:flex-row items-start md:items-end gap-8">
+      <div className="relative -mt-28 px-8">
+        <div className="bg-white rounded-[40px] shadow-2xl shadow-slate-200/60 border border-slate-100 p-10">
+          <div className="flex flex-col lg:flex-row items-start lg:items-end gap-10">
             {/* Avatar */}
             <div className="relative group">
-              <div className="w-40 h-40 rounded-3xl bg-white p-2 shadow-2xl">
-                <div className="w-full h-full rounded-2xl bg-indigo-50 flex items-center justify-center border-2 border-slate-100 overflow-hidden">
+              <div className="w-48 h-48 rounded-[32px] bg-white p-2 shadow-2xl transition-transform duration-500 group-hover:scale-105">
+                <div className="w-full h-full rounded-[24px] bg-slate-50 flex items-center justify-center border-2 border-slate-100 overflow-hidden">
                   {user?.picture ? (
                     <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
-                    <UserIcon className="w-20 h-20 text-indigo-200" />
+                    <UserIcon className="w-24 h-24 text-slate-200" />
                   )}
                 </div>
               </div>
-              <button className="absolute bottom-2 right-2 p-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 shadow-lg hover:text-indigo-600 hover:scale-110 transition-all">
-                <Camera className="w-5 h-5" />
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="absolute bottom-3 right-3 p-3 bg-white border border-slate-100 rounded-2xl text-slate-500 shadow-xl hover:text-indigo-600 hover:scale-110 transition-all"
+              >
+                <Camera className="w-6 h-6" />
               </button>
             </div>
 
             {/* Basic Info */}
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-4xl font-black text-slate-900 tracking-tight">{user?.name}</h1>
-                {user?.role === 'ADMIN' && (
-                  <span className="px-3 py-1 bg-indigo-100 text-indigo-600 text-xs font-black uppercase tracking-widest rounded-full">Admin</span>
-                )}
+            <div className="flex-1 space-y-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <h1 className="text-5xl font-black text-slate-900 tracking-tight">{user?.name}</h1>
+                <span className="px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-indigo-100">
+                  {user?.role}
+                </span>
               </div>
-              <div className="flex flex-wrap items-center gap-6 text-slate-500 font-medium">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  <span>{user?.email}</span>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-500 font-semibold">
+                <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                  <Mail className="w-4 h-4 text-indigo-500" />
+                  <span className="text-sm">{user?.email}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <UserIcon className="w-4 h-4" />
-                  <span>User ID: <span className="font-mono text-xs">{user?.id?.substring(0, 8)}...</span></span>
+                <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                  <Phone className="w-4 h-4 text-emerald-500" />
+                  <span className="text-sm">{user?.phone || 'No phone set'}</span>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                  <Building2 className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm">{user?.department || 'General Faculty'}</span>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                  <Smartphone className="w-4 h-4 text-rose-500" />
+                  <span className="text-sm">ID: {user?.id?.substring(0, 8)}...</span>
                 </div>
               </div>
+
+              {user?.bio && (
+                <div className="mt-6 flex gap-3 text-slate-600 italic font-medium max-w-2xl">
+                  <Quote className="w-8 h-8 text-indigo-200 shrink-0" />
+                  <p className="text-lg leading-relaxed">{user.bio}</p>
+                </div>
+              )}
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3">
-              <button className="px-6 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+            <div className="flex gap-4 shrink-0">
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="px-8 py-4 bg-slate-900 text-white rounded-3xl font-black hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all flex items-center gap-2"
+              >
                 Edit Profile
-              </button>
-              <button className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Settings
               </button>
             </div>
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 pt-8 border-t border-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 pt-10 border-t border-slate-100">
             {stats.map((stat, i) => (
-              <div key={i} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors">
-                <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+              <div key={i} className="flex items-center gap-5 p-2 rounded-3xl group">
+                <div className={`w-14 h-14 rounded-2xl ${stat.bg} flex items-center justify-center transition-transform group-hover:rotate-6`}>
+                  <stat.icon className={`w-7 h-7 ${stat.color}`} />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-400">{stat.label}</p>
-                  <p className="text-lg font-bold text-slate-800">{stat.value}</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">{stat.label}</p>
+                  <p className="text-xl font-bold text-slate-800">{stat.value}</p>
                 </div>
               </div>
             ))}
@@ -102,61 +215,180 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Detailed Settings Sections */}
+      {/* Detailed Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-8">
-        {/* Security Section */}
-        <div className="bg-white rounded-[32px] border border-slate-200 p-8 space-y-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Lock className="w-6 h-6 text-indigo-600" />
-            Security & Access
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl group cursor-pointer hover:bg-indigo-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center">
-                  <Smartphone className="w-5 h-5 text-slate-600" />
-                </div>
-                <div>
-                  <p className="font-bold text-slate-800">Two-Factor Authentication</p>
-                  <p className="text-xs text-slate-500">Add an extra layer of security</p>
-                </div>
-              </div>
-              <span className="px-3 py-1 bg-slate-200 text-slate-500 text-[10px] font-bold rounded-full">DISABLED</span>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl group cursor-pointer hover:bg-indigo-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center">
-                  <Lock className="w-5 h-5 text-slate-600" />
-                </div>
-                <div>
-                  <p className="font-bold text-slate-800">Change Password</p>
-                  <p className="text-xs text-slate-500">Update your account credentials</p>
-                </div>
-              </div>
-              <ExternalLink className="w-5 h-5 text-slate-300 group-hover:text-indigo-600" />
-            </div>
+        {/* Bio Section */}
+        <div className="bg-white rounded-[40px] border border-slate-200 p-10 space-y-8 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black text-slate-900">About Me</h2>
+            <button className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors">
+              <Plus className="w-5 h-5" />
+            </button>
           </div>
+          <p className="text-slate-500 font-medium leading-relaxed">
+            {user?.bio || "Tell the campus community about yourself, your research interests, or your role at the university."}
+          </p>
         </div>
 
-        {/* Notifications Section */}
-        <div className="bg-white rounded-[32px] border border-slate-200 p-8 space-y-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Bell className="w-6 h-6 text-indigo-600" />
-            Notification Preferences
-          </h2>
-          <div className="space-y-4">
-            {['Email Alerts', 'System Push Notifications', 'SMS Updates'].map((pref, i) => (
-              <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
-                <p className="font-bold text-slate-800">{pref}</p>
-                <div className="w-12 h-6 bg-indigo-600 rounded-full relative p-1 cursor-pointer">
-                  <div className="absolute right-1 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+        {/* Security Summary */}
+        <div className="bg-slate-900 rounded-[40px] p-10 text-white space-y-8 relative overflow-hidden">
+          <div className="relative z-10">
+            <h2 className="text-2xl font-black mb-6">Security Health</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                <div className="flex items-center gap-4">
+                  <Shield className="w-5 h-5 text-emerald-400" />
+                  <span className="font-bold">Password Strength</span>
                 </div>
+                <span className="text-emerald-400 text-xs font-black uppercase">Strong</span>
               </div>
-            ))}
+              <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                <div className="flex items-center gap-4">
+                  <Smartphone className="w-5 h-5 text-amber-400" />
+                  <span className="font-bold">Last Login</span>
+                </div>
+                <span className="text-slate-400 text-xs font-bold">Just Now</span>
+              </div>
+            </div>
+            <button className="mt-8 w-full py-4 bg-white text-slate-900 rounded-2xl font-black hover:bg-indigo-50 transition-colors">
+              Account Security Dashboard
+            </button>
           </div>
+          <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px]"></div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[48px] w-full max-w-2xl p-10 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="text-3xl font-black text-slate-900">Update Profile</h2>
+                <p className="text-slate-500 font-medium mt-1">Make your profile represent you across the campus.</p>
+              </div>
+              <button 
+                onClick={() => setIsEditing(false)}
+                className="p-3 text-slate-400 hover:text-slate-900 rounded-2xl hover:bg-slate-100 transition-all"
+              >
+                <X className="w-8 h-8" />
+              </button>
+            </div>
+
+            {errors.submit && (
+              <div className="mb-8 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl flex items-center gap-3 font-bold animate-in shake duration-300">
+                <AlertCircle className="w-5 h-5" />
+                {errors.submit}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateProfile} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Name */}
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+                  <div className="relative group">
+                    <UserIcon className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${errors.name ? 'text-rose-500' : 'text-slate-400 group-focus-within:text-indigo-600'}`} />
+                    <input 
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      className={`w-full pl-14 pr-5 py-5 bg-slate-50 border-2 rounded-[24px] outline-none transition-all text-slate-800 font-bold ${errors.name ? 'border-rose-200 focus:border-rose-500 focus:ring-rose-50' : 'border-transparent focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50'}`}
+                      placeholder="Your full name"
+                    />
+                  </div>
+                  {errors.name && <p className="text-rose-500 text-xs font-bold ml-1">{errors.name}</p>}
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Phone Number</label>
+                  <div className="relative group">
+                    <Phone className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${errors.phone ? 'text-rose-500' : 'text-slate-400 group-focus-within:text-indigo-600'}`} />
+                    <input 
+                      type="text"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      className={`w-full pl-14 pr-5 py-5 bg-slate-50 border-2 rounded-[24px] outline-none transition-all text-slate-800 font-bold ${errors.phone ? 'border-rose-200 focus:border-rose-500 focus:ring-rose-50' : 'border-transparent focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50'}`}
+                      placeholder="+94 7X XXX XXXX"
+                    />
+                  </div>
+                  {errors.phone && <p className="text-rose-500 text-xs font-bold ml-1">{errors.phone}</p>}
+                </div>
+
+                {/* Department */}
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Faculty / Department</label>
+                  <div className="relative group">
+                    <Building2 className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                    <input 
+                      type="text"
+                      value={formData.department}
+                      onChange={(e) => setFormData({...formData, department: e.target.value})}
+                      className="w-full pl-14 pr-5 py-5 bg-slate-50 border-2 border-transparent rounded-[24px] outline-none focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50 transition-all text-slate-800 font-bold"
+                      placeholder="e.g. Faculty of Computing"
+                    />
+                  </div>
+                </div>
+
+                {/* Image URL */}
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Profile Photo Link</label>
+                  <div className="relative group">
+                    <Camera className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${errors.imageUrl ? 'text-rose-500' : 'text-slate-400 group-focus-within:text-indigo-600'}`} />
+                    <input 
+                      type="url"
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                      className={`w-full pl-14 pr-5 py-5 bg-slate-50 border-2 rounded-[24px] outline-none transition-all text-slate-800 font-bold ${errors.imageUrl ? 'border-rose-200 focus:border-rose-500 focus:ring-rose-50' : 'border-transparent focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50'}`}
+                      placeholder="https://images.com/photo.jpg"
+                    />
+                  </div>
+                  {errors.imageUrl && <p className="text-rose-500 text-xs font-bold ml-1">{errors.imageUrl}</p>}
+                </div>
+              </div>
+
+              {/* Bio */}
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Short Biography</label>
+                <div className="relative group">
+                  <Quote className={`absolute left-5 top-6 w-5 h-5 transition-colors ${errors.bio ? 'text-rose-500' : 'text-slate-400 group-focus-within:text-indigo-600'}`} />
+                  <textarea 
+                    value={formData.bio}
+                    onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                    rows={4}
+                    className={`w-full pl-14 pr-5 py-5 bg-slate-50 border-2 rounded-[24px] outline-none transition-all text-slate-800 font-bold resize-none ${errors.bio ? 'border-rose-200 focus:border-rose-500 focus:ring-rose-50' : 'border-transparent focus:bg-white focus:border-indigo-600 focus:ring-8 focus:ring-indigo-50'}`}
+                    placeholder="Tell us about yourself..."
+                  />
+                </div>
+                {errors.bio && <p className="text-rose-500 text-xs font-bold ml-1">{errors.bio}</p>}
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 px-8 py-5 bg-slate-100 border border-slate-200 rounded-[24px] font-black text-slate-600 hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 px-8 py-5 bg-indigo-600 text-white rounded-[24px] font-black hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Updating...
+                    </>
+                  ) : 'Update Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

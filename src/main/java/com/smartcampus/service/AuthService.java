@@ -142,5 +142,20 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return jwtTokenProvider.generateToken(user);
+        /**
+     * Update user profile details and return a new JWT.
+     */
+    public String updateProfile(String email, String newName, String newImageUrl, String phone, String department, String bio) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (newName != null && !newName.isBlank()) user.setName(newName);
+        if (newImageUrl != null) user.setImageUrl(newImageUrl);
+        if (phone != null) user.setPhone(phone);
+        if (department != null) user.setDepartment(department);
+        if (bio != null) user.setBio(bio);
+
+        userRepository.save(user);
+        return jwtTokenProvider.generateToken(user);
     }
 }
