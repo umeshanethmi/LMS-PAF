@@ -10,6 +10,7 @@ import com.lms.assessment.repository.user.UserRepository;
 import com.lms.assessment.repository.ticket.TicketAttachmentRepository;
 import com.lms.assessment.repository.ticket.TicketRepository;
 import com.lms.assessment.service.FileStorageService;
+import com.lms.assessment.service.campus.HubNotificationService;
 import com.lms.assessment.service.email.EmailService;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -35,17 +36,20 @@ public class TicketServiceImpl implements TicketService {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final EmailService emailService;
+    private final HubNotificationService hubNotificationService;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
                              TicketAttachmentRepository attachmentRepository,
                              UserRepository userRepository,
                              FileStorageService fileStorageService,
-                             EmailService emailService) {
+                             EmailService emailService,
+                             HubNotificationService hubNotificationService) {
         this.ticketRepository = ticketRepository;
         this.attachmentRepository = attachmentRepository;
         this.userRepository = userRepository;
         this.fileStorageService = fileStorageService;
         this.emailService = emailService;
+        this.hubNotificationService = hubNotificationService;
     }
 
     @Override
@@ -89,6 +93,8 @@ public class TicketServiceImpl implements TicketService {
 
         // Send confirmation email
         sendConfirmationEmail(saved);
+        notifyTicketReporter(saved.getReporterUserId(), saved.getId(), "Incident reported",
+                "Your maintenance ticket " + saved.getId() + " was created.");
 
         return mapToTicketResponse(saved, true);
     }
@@ -235,6 +241,8 @@ public class TicketServiceImpl implements TicketService {
         } catch (Exception e) {
             System.err.println("Notification failed: " + e.getMessage());
         }
+        notifyTicketReporter(ticket.getReporterUserId(), ticket.getId(), "Technician assigned",
+                "Ticket " + ticket.getId() + " is now ASSIGNED.");
 
         return mapToTicketResponse(updated, true);
     }
@@ -309,6 +317,8 @@ public class TicketServiceImpl implements TicketService {
         } catch (Exception e) {
             System.err.println("Notification failed: " + e.getMessage());
         }
+        notifyTicketReporter(ticket.getReporterUserId(), ticket.getId(), "Ticket status updated",
+                "Ticket " + ticket.getId() + " is now " + updated.getStatus() + ".");
 
         return mapToTicketResponse(updated, true);
     }
@@ -649,7 +659,16 @@ public class TicketServiceImpl implements TicketService {
         } catch (Exception e) {
             System.err.println("Notification failed: " + e.getMessage());
         }
+        notifyTicketReporter(ticket.getReporterUserId(), ticket.getId(), "Work in progress",
+                "A technician started work on ticket " + ticket.getId() + ".");
 
         return mapToTicketResponse(updated, true);
+    }
+
+    private void notifyTicketReporter(String reporterUserId, String ticketId, String title, String body) {
+        if (reporterUserId == null || reporterUserId.isBlank() || "0".equals(reporterUserId)) {
+            return;
+        }
+        hubNotificationService.notifyTicketEvent(reporterUserId, ticketId, title, body);
     }
 }
