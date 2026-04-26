@@ -1,4 +1,4 @@
-﻿package com.lms.assessment.dto.campus;
+package com.lms.assessment.dto.campus;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

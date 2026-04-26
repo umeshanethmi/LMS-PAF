@@ -1,4 +1,4 @@
-﻿package com.lms.assessment.dto.campus;
+package com.lms.assessment.dto.campus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,4 +1,4 @@
-﻿package com.lms.assessment.service.campus;
+package com.lms.assessment.service.campus;
 
 import com.lms.assessment.dto.campus.BookingChatRequest;
 import com.lms.assessment.dto.campus.BookingChatResponse;

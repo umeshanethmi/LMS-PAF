@@ -1,4 +1,4 @@
-﻿package com.lms.assessment.controller.campus;
+package com.lms.assessment.controller.campus;
 
 import com.lms.assessment.dto.campus.UnavailabilityRequest;
 import com.lms.assessment.model.campus.ResourceUnavailability;

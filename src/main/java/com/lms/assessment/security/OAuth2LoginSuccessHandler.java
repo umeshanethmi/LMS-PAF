@@ -1,4 +1,4 @@
-﻿package com.lms.assessment.security;
+package com.lms.assessment.security;
 
 import com.lms.assessment.service.UserService;
 import jakarta.servlet.ServletException;

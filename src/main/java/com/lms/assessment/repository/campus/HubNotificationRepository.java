@@ -1,4 +1,4 @@
-﻿package com.lms.assessment.repository.campus;
+package com.lms.assessment.repository.campus;
 
 import com.lms.assessment.model.campus.HubNotification;
 import org.springframework.data.mongodb.repository.MongoRepository;

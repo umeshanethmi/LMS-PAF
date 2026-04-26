@@ -1,4 +1,4 @@
-﻿package com.lms.assessment.service.campus;
+package com.lms.assessment.service.campus;
 
 import com.lms.assessment.model.campus.HubNotification;
 import com.lms.assessment.repository.campus.HubNotificationRepository;

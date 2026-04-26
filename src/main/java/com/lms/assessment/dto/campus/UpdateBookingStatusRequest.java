@@ -1,4 +1,4 @@
-﻿package com.lms.assessment.dto.campus;
+package com.lms.assessment.dto.campus;
 
 import com.lms.assessment.model.campus.ResourceBooking;
 import jakarta.validation.constraints.NotNull;

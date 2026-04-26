@@ -1,4 +1,4 @@
-﻿package com.lms.assessment.security;
+package com.lms.assessment.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
