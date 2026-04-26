@@ -50,7 +50,7 @@ export default function BookingAssistantPage() {
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'bot',
-        text: 'Sorry, I could not connect to the server. Make sure the backend is running on port 8084.',
+        text: 'Sorry, I could not connect to the server. Make sure the backend is running on port 8080.',
       }]);
     } finally {
       setLoading(false);

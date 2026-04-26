@@ -22,9 +22,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
-    public OAuth2LoginSuccessHandler(JwtService jwtService, UserService userService) {
+    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
+
+    public OAuth2LoginSuccessHandler(JwtService jwtService, UserService userService, HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository) {
         this.jwtService = jwtService;
         this.userService = userService;
+        this.httpCookieOAuth2AuthorizationRequestRepository = httpCookieOAuth2AuthorizationRequestRepository;
     }
 
     @Override
@@ -43,6 +46,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .queryParam("token", token)
                 .build().toUriString();
 
+        clearAuthenticationAttributes(request, response);
+
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+    }
+
+    protected void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {
+        super.clearAuthenticationAttributes(request);
+        httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
     }
 }

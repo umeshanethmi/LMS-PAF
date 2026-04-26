@@ -17,6 +17,7 @@ interface AuthContextType {
   role: UserRole;
   isAuthenticated: boolean;
   login: (username: string, password: String) => Promise<boolean>;
+  loginWithToken: (token: string) => Promise<void>;
   logout: () => void;
   setSimulationRole: (role: UserRole) => void;
 }
@@ -30,11 +31,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedUser = localStorage.getItem('user');
       return savedUser ? JSON.parse(savedUser) : null;
     } catch (e) {
-      console.error('Failed to parse user from local storage:', e);
       localStorage.removeItem('user');
       return null;
     }
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token && !user) {
+      fetchUserProfile(token);
+    }
+  }, []);
+
+  const fetchUserProfile = async (token: string) => {
+    try {
+      const response = await apiClient.get<User>('/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const formattedUser = {
+        ...response.data,
+        role: response.data.role?.toUpperCase() as UserRole,
+        token
+      };
+      setUser(formattedUser);
+      localStorage.setItem('user', JSON.stringify(formattedUser));
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      logout();
+    }
+  };
+
+  const loginWithToken = async (token: string) => {
+    localStorage.setItem('token', token);
+    await fetchUserProfile(token);
+  };
 
   const login = async (username: string, password: String) => {
     try {
@@ -72,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: simulationRole || user?.role || null, 
       isAuthenticated: !!user, 
       login, 
+      loginWithToken,
       logout,
       setSimulationRole
     }}>

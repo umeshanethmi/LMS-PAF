@@ -8,12 +8,13 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import OAuth2RedirectHandler from './pages/auth/OAuth2RedirectHandler';
 import BookingAssistantPage from './pages/BookingAssistantPage';
 import MyBookingsPage from './pages/MyBookingsPage';
 import { useAuth } from './contexts/AuthContext';
 import './App.css';
 
-const AUTH_ROUTES = ['/login', '/register'];
+const AUTH_ROUTES = ['/login', '/register', '/oauth2/redirect'];
 
 function AppShell() {
   const location = useLocation();
@@ -25,6 +26,7 @@ function AppShell() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
       </Routes>
     );
   }
