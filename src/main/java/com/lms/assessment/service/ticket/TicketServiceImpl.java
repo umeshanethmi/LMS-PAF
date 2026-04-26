@@ -145,6 +145,67 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    public TicketResponse updateTicket(String ticketId, UpdateTicketRequest request, String currentUserId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+
+        if (!Objects.equals(ticket.getReporterUserId(), currentUserId)) {
+            throw new ForbiddenOperationException("Only the reporter can update this ticket.");
+        }
+
+        if (request.getCategory() != null && !request.getCategory().isBlank()) {
+            ticket.setCategory(request.getCategory());
+        }
+        if (request.getDescription() != null && !request.getDescription().isBlank()) {
+            ticket.setDescription(request.getDescription());
+        }
+        if (request.getLocation() != null && !request.getLocation().isBlank()) {
+            ticket.setLocation(request.getLocation());
+        }
+        if (request.getPriority() != null) {
+            ticket.setPriority(request.getPriority());
+        }
+        if (request.getContactDetails() != null && !request.getContactDetails().isBlank()) {
+            ticket.setContactDetails(request.getContactDetails());
+        }
+
+        ticket.setUpdatedAt(LocalDateTime.now());
+        
+        List<MultipartFile> files = request.getFiles() == null ? Collections.emptyList() : request.getFiles();
+        List<String> attachmentPaths = request.getAttachmentPaths() == null ? Collections.emptyList() : request.getAttachmentPaths();
+        
+        int currentAttachmentCount = attachmentRepository.findByTicketId(ticketId).size();
+        int newAttachmentsCount = countProvidedAttachments(files, attachmentPaths);
+        
+        if (currentAttachmentCount + newAttachmentsCount > MAX_ATTACHMENTS_PER_TICKET) {
+            throw new SubmissionException("A maximum of " + MAX_ATTACHMENTS_PER_TICKET + " attachments is allowed per ticket.");
+        }
+
+        Ticket saved = ticketRepository.save(ticket);
+        addUploadedAttachments(saved, files);
+        addPathAttachments(saved, attachmentPaths);
+
+        return mapToTicketResponse(saved, true);
+    }
+
+    @Override
+    public void deleteTicket(String ticketId, String currentUserId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+
+        if (!Objects.equals(ticket.getReporterUserId(), currentUserId)) {
+            throw new ForbiddenOperationException("Only the reporter can delete this ticket.");
+        }
+
+        // Delete associated attachments
+        List<TicketAttachment> attachments = attachmentRepository.findByTicketId(ticketId);
+        attachmentRepository.deleteAll(attachments);
+
+        // Delete ticket
+        ticketRepository.delete(ticket);
+    }
+
+    @Override
     public TicketResponse assignTechnician(String ticketId, AssignTechnicianRequest request, String currentUserId,
                                            TicketActorRole actorRole) {
         requireRole(actorRole, TicketActorRole.ADMIN, "Only administrators can assign technicians.");

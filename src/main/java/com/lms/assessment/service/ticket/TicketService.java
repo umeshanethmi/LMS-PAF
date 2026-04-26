@@ -13,6 +13,11 @@ public interface TicketService {
 
     TicketResponse getTicketById(String ticketId);
 
+    TicketResponse updateTicket(String ticketId, UpdateTicketRequest request, String currentUserId);
+
+    void deleteTicket(String ticketId, String currentUserId);
+
+
     TicketResponse assignTechnician(String ticketId, AssignTechnicianRequest request, String currentUserId,
                                     TicketActorRole actorRole);
 

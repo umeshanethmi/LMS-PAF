@@ -17,7 +17,7 @@ import {
 import TicketCreateForm from '../../components/tickets/TicketCreateForm';
 import TicketList from '../../components/tickets/TicketList';
 import TicketDetailView from '../../components/tickets/TicketDetailView';
-import { getAllTickets, assignTechnician, getTicketById } from '../../services/ticketApi';
+import { getAllTickets, assignTechnician, getTicketById, deleteTicket } from '../../services/ticketApi';
 import type { Ticket, TicketRole } from '../../services/ticketApi';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -78,6 +78,19 @@ function IncidentTicketsPage() {
       console.error('Failed to load tickets', error);
       setError('Failed to sync with maintenance systems. Please check connection.');
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this ticket?')) return;
+    try {
+      setLoading(true);
+      await deleteTicket(ticketId, currentUserId);
+      await loadTickets();
+    } catch (error: any) {
+      console.error('Failed to delete ticket', error);
+      setError('Failed to delete ticket: ' + (error.response?.data?.message || error.message));
       setLoading(false);
     }
   };
@@ -260,6 +273,7 @@ function IncidentTicketsPage() {
             tickets={filteredTickets}
             onSelectTicket={setSelectedTicket}
             onAssignTechnician={isAdmin ? setAssigningTicket : undefined}
+            onDeleteTicket={apiRole === 'USER' ? handleDeleteTicket : undefined}
             role={apiRole}
           />
         )}
