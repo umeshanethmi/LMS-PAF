@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { LogIn, ShieldCheck, Zap, BellRing, Mail, Lock, Loader2, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { ShieldCheck, Zap, BellRing, Mail, Lock, Loader2, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 

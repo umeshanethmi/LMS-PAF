@@ -1,4 +1,10 @@
-import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+// Adapter over the canonical singular AuthContext at ../context/AuthContext.
+// Many pages were originally written against the plural shape (with `role`
+// mapped to UI roles and a 2-arg login). Rather than churn every import site,
+// this file exposes the same useAuth hook with the legacy shape, backed by
+// the singular provider that App.tsx already mounts.
+
+import { useAuth as useSingularAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 
 export type BackendRole =
@@ -16,46 +22,32 @@ export interface AuthUser {
   username: string;
   email: string;
   role: BackendRole;
+  name?: string;
 }
-
-interface AuthState {
-  user: AuthUser | null;
-  token: string | null;
-  role: UserRole;
-  login: (identifier: string, password: string) => Promise<void>;
-  logout: () => void;
-  loading: boolean;
-}
-
-const AuthContext = createContext<AuthState | undefined>(undefined);
-
-const STORAGE_KEY = 'lms.auth';
 
 const INSTRUCTOR_ROLES: BackendRole[] = ['SUPERADMIN', 'ADMIN', 'INSTRUCTOR', 'TECHNICIAN'];
 
-function uiRoleFor(backend: BackendRole | undefined | null): UserRole {
+function uiRoleFor(backend: string | undefined | null): UserRole {
   if (!backend) return null;
-  return INSTRUCTOR_ROLES.includes(backend) ? 'instructor' : 'student';
+  return INSTRUCTOR_ROLES.includes(backend.toUpperCase() as BackendRole)
+    ? 'instructor'
+    : 'student';
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+export function useAuth() {
+  const ctx = useSingularAuth();
 
-  useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as { user: AuthUser; token: string };
-        setUser(parsed.user);
-        setToken(parsed.token);
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
+  const user: AuthUser | null = ctx.user
+    ? {
+        id: ctx.user.id,
+        username: ctx.user.name || ctx.user.email?.split('@')[0] || 'user',
+        email: ctx.user.email,
+        role: (ctx.user.role?.toUpperCase() as BackendRole) || 'USER',
+        name: ctx.user.name,
       }
-    }
-    setLoading(false);
-  }, []);
+    : null;
+
+  const role = uiRoleFor(user?.role);
 
   const login = async (identifier: string, password: string) => {
     const res = await apiClient.post<{
@@ -65,37 +57,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: BackendRole;
       token: string;
     }>('/auth/login', { username: identifier, password });
-
-    const next: AuthUser = {
-      id: res.data.id,
-      username: res.data.username,
-      email: res.data.email,
-      role: res.data.role,
-    };
-    setUser(next);
-    setToken(res.data.token);
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: next, token: res.data.token }));
+    ctx.login(res.data.token);
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem(STORAGE_KEY);
+  return {
+    user,
+    token: ctx.token,
+    role,
+    isAuthenticated: ctx.isAuthenticated,
+    loading: false,
+    login,
+    logout: ctx.logout,
+    simulationRole: ctx.simulationRole,
+    setSimulationRole: ctx.setSimulationRole,
   };
-
-  return (
-    <AuthContext.Provider value={{ user, token, role: uiRoleFor(user?.role), login, logout, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+// Re-export the singular AuthProvider so existing imports of AuthProvider
+// from this path keep working.
+export { AuthProvider } from '../context/AuthContext';

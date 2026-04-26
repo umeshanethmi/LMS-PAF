@@ -48,7 +48,19 @@ public class UserService {
     }
 
     public Optional<AuthResponse> login(LoginRequest request) {
-        return userRepository.findByUsername(request.getUsername())
+        String identifier = request.getUsername();
+        if (identifier == null || identifier.isBlank()) {
+            identifier = request.getEmail();
+        }
+        if (identifier == null || identifier.isBlank()) {
+            return Optional.empty();
+        }
+        String idLower = identifier.trim().toLowerCase();
+        Optional<User> userOpt = userRepository.findByUsername(identifier);
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByEmail(idLower);
+        }
+        return userOpt
                 .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()))
                 .map(user -> AuthResponse.builder()
                         .id(user.getId())

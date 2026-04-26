@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarCheck, Clock, MapPin, Loader2, XCircle, Users, CheckCircle2, AlertCircle, Ban } from 'lucide-react';
 import { bookingApi, type BookingRecord } from '../services/bookingApi';
-import { useAuth } from '../contexts/AuthContext';
 
 const STATUS_CONFIG = {
   PENDING:   { color: 'bg-amber-100 text-amber-700 border-amber-200',    icon: AlertCircle,   label: 'Pending' },
@@ -11,7 +10,6 @@ const STATUS_CONFIG = {
 };
 
 export default function MyBookingsPage() {
-  const { user } = useAuth();
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

@@ -24,15 +24,36 @@ public class JwtService {
     }
 
     public String generateToken(User user) {
-        return buildToken(user.getId());
+        Date now = new Date();
+        return Jwts.builder()
+                .subject(user.getId())
+                .claim("id", user.getId())
+                .claim("email", user.getEmail())
+                .claim("name", user.getUsername())
+                .claim("role", user.getRole() != null ? user.getRole().name() : "USER")
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expirationMs))
+                .signWith(secretKey)
+                .compact();
     }
 
     public String generateTokenForUserId(String userId) {
-        return buildToken(userId);
+        Date now = new Date();
+        return Jwts.builder()
+                .subject(userId)
+                .claim("id", userId)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expirationMs))
+                .signWith(secretKey)
+                .compact();
     }
 
     public String extractUserId(String token) {
         return parseClaims(token).getSubject();
+    }
+
+    public String extractRole(String token) {
+        return parseClaims(token).get("role", String.class);
     }
 
     public boolean isValid(String token) {
@@ -42,16 +63,6 @@ public class JwtService {
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
-    }
-
-    private String buildToken(String subject) {
-        Date now = new Date();
-        return Jwts.builder()
-                .subject(subject)
-                .issuedAt(now)
-                .expiration(new Date(now.getTime() + expirationMs))
-                .signWith(secretKey)
-                .compact();
     }
 
     private Claims parseClaims(String token) {
