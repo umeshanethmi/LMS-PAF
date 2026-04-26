@@ -47,18 +47,18 @@ public class JwtService {
     private String buildToken(String subject) {
         Date now = new Date();
         return Jwts.builder()
-                .setSubject(subject)
-                .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + expirationMs))
-                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .subject(subject)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expirationMs))
+                .signWith(secretKey)
                 .compact();
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+        return Jwts.parser()
+                .verifyWith(secretKey)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
