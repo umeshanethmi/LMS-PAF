@@ -1,0 +1,17 @@
+package com.lms.assessment.dto.ticket;
+
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AssignTechnicianRequest {
+
+    @NotNull(message = "Technician ID is required")
+    private String technicianId;
+}
