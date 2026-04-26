@@ -69,9 +69,10 @@ const Sidebar = () => {
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-4 space-y-1.5 py-6 custom-scrollbar">
         {menuItems.map((item) => (
-          <NavLink 
-            key={item.path} 
-            to={item.path} 
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end
             className={({ isActive }) => `
               group relative flex items-center justify-between px-4 py-4 rounded-2xl transition-all duration-300
               ${isActive 
