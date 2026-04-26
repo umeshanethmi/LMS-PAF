@@ -27,7 +27,7 @@ const RegisterPage = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:8084/api/auth/register', {
+      const res = await fetch('http://localhost:8080/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: form.username, email: form.email, password: form.password }),

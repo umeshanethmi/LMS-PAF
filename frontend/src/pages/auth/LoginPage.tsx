@@ -101,7 +101,7 @@ const LoginPage = () => {
 
             {/* Google OAuth */}
             <a
-              href="http://localhost:8084/oauth2/authorization/google"
+              href="http://localhost:8080/oauth2/authorization/google"
               className="w-full py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-3 transition-all hover:bg-white/15 border border-white/20 bg-white/5"
             >
               <Chrome className="w-5 h-5 text-rose-400" />

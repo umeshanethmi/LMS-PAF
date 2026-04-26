@@ -60,23 +60,43 @@ public class UserService {
     }
 
     public User findOrCreateFromGoogle(String email, String displayLabel) {
-        Optional<User> existing = userRepository.findByEmail(email.trim().toLowerCase());
+        String cleanEmail = email.trim().toLowerCase();
+        Optional<User> existing = userRepository.findByEmail(cleanEmail);
         if (existing.isPresent()) {
-            return existing.get();
+            User user = existing.get();
+            boolean changed = false;
+            if (user.getRole() == null) {
+                user.setRole(User.Role.USER);
+                changed = true;
+            }
+            if (user.getUsername() == null || user.getUsername().isBlank()) {
+                String localPart = cleanEmail.split("@")[0].replaceAll("[^a-zA-Z0-9]", "");
+                user.setUsername(localPart.isEmpty() ? "user" : localPart);
+                changed = true;
+            }
+            if (changed) {
+                return userRepository.save(user);
+            }
+            return user;
         }
-        String localPart = email.split("@")[0].replaceAll("[^a-zA-Z0-9]", "");
+
+        String localPart = cleanEmail.split("@")[0].replaceAll("[^a-zA-Z0-9]", "");
         String username = localPart.isEmpty() ? "user" : localPart;
         String candidate = username;
         int i = 0;
         while (userRepository.existsByUsername(candidate)) {
             candidate = username + (++i);
         }
+
         User user = new User();
         user.setUsername(candidate);
-        user.setEmail(email.trim().toLowerCase());
+        user.setEmail(cleanEmail);
         user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
         user.setRole(User.Role.USER);
-        return userRepository.save(user);
+        
+        User savedUser = userRepository.save(user);
+        System.out.println("DEBUG: Created new Google user: " + savedUser.getUsername() + " with role: " + savedUser.getRole());
+        return savedUser;
     }
 
     public Optional<AuthResponse> profileForUserId(String userId) {

@@ -1,5 +1,6 @@
 package com.lms.assessment.config;
 
+import com.lms.assessment.security.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.lms.assessment.security.JwtAuthFilter;
 import com.lms.assessment.security.OAuth2LoginSuccessHandler;
 import org.springframework.context.annotation.Bean;
@@ -25,7 +26,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtAuthFilter jwtAuthFilter,
-                                           OAuth2LoginSuccessHandler oauth2LoginSuccessHandler) throws Exception {
+                                           OAuth2LoginSuccessHandler oauth2LoginSuccessHandler,
+                                           HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -40,7 +42,9 @@ public class SecurityConfig {
                                 "/api/users/**")
                         .authenticated()
                         .anyRequest().permitAll())
-                .oauth2Login(oauth -> oauth.successHandler(oauth2LoginSuccessHandler))
+                .oauth2Login(oauth -> oauth
+                        .authorizationEndpoint(auth -> auth.authorizationRequestRepository(cookieAuthorizationRequestRepository))
+                        .successHandler(oauth2LoginSuccessHandler))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
