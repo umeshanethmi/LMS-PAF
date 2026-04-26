@@ -1,8 +1,6 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutGrid,
-  Ticket, 
   Settings, 
   User, 
   Bell,
@@ -10,30 +8,38 @@ import {
   ShieldCheck,
   Inbox,
   Briefcase,
-  LogOut
+  LogOut,
+  Bot,
+  CalendarCheck
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 
-import { useAuth } from '../../contexts/AuthContext';
+const Sidebar = () => {
+  const { user, simulationRole, logout } = useAuth();
+  const { unreadCount } = useNotifications();
+  const effectiveRole = simulationRole || user?.role || 'USER';
+  const isAdmin = effectiveRole === 'ADMIN';
+  const isTechnician = effectiveRole === 'TECHNICIAN';
 
-function Sidebar() {
-  const { user, role, logout } = useAuth();
-  
   const menuItems = [
     { icon: LayoutGrid, label: 'Dashboard', path: '/' },
+    { icon: Bot, label: 'Book a Room', path: '/book' },
+    { icon: CalendarCheck, label: 'My Bookings', path: '/my-bookings' },
     { 
       icon: Inbox, 
-      label: role === 'ADMIN' ? 'Manage Incidents' : role === 'TECHNICIAN' ? 'Assigned Tasks' : 'Student Tickets', 
+      label: isAdmin ? 'Manage Incidents' : isTechnician ? 'Assigned Tasks' : 'Student Tickets', 
       path: '/tickets' 
     },
-    ...(role === 'ADMIN' ? [
+    ...(isAdmin ? [
       { icon: User, label: 'User Management', path: '/users' },
       { icon: Briefcase, label: 'Admin View', path: '/admin' }
     ] : []),
-    ...(role === 'TECHNICIAN' ? [
+    ...(isTechnician ? [
       { icon: Briefcase, label: 'Tech Hub', path: '/tech' }
     ] : []),
     { icon: Bell, label: 'Notifications', path: '/notifications' },
-    { icon: User, label: 'My Profile', path: '/profile' },
+    { icon: User, label: 'Profile', path: '/profile' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
@@ -77,6 +83,11 @@ function Sidebar() {
                     <item.icon className="w-5 h-5" />
                   </div>
                   <span className="text-sm font-bold tracking-tight">{item.label}</span>
+                  {item.path === '/notifications' && unreadCount > 0 && (
+                    <span className="ml-auto bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </div>
                 <ChevronRight className={`w-4 h-4 transition-all duration-300 ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-40 group-hover:translate-x-0'}`} />
               </>
@@ -85,23 +96,25 @@ function Sidebar() {
         ))}
       </div>
 
-      <div className="p-4 border-t border-white/5 m-4 bg-white/5 rounded-3xl">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-200 border border-white/20">
-            {user?.username?.charAt(0).toUpperCase() || 'U'}
+      {/* User Info & Logout */}
+      <div className="p-6 border-t border-white/5 bg-white/5 rounded-3xl m-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-white shadow-lg border border-white/20">
+            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-xs font-black truncate text-slate-200">{user?.username || 'Guest System'}</p>
-            <p className="text-[9px] text-slate-400 truncate uppercase font-black tracking-widest mt-0.5">{role || 'Unassigned'}</p>
+            <p className="text-xs font-black truncate text-slate-200">{user?.name || user?.email?.split('@')[0] || 'Member'}</p>
+            <p className="text-[9px] text-slate-400 truncate uppercase font-black tracking-widest mt-0.5">{effectiveRole}</p>
           </div>
-          <button 
-            onClick={logout}
-            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-            title="Logout"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
+        
+        <button 
+          onClick={logout}
+          className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300 group"
+        >
+          <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+          <span className="font-bold text-xs">Logout Session</span>
+        </button>
       </div>
     </div>
   );

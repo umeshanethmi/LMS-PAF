@@ -5,12 +5,12 @@ import com.lms.assessment.dto.user.LoginRequest;
 import com.lms.assessment.model.user.User;
 import com.lms.assessment.repository.user.UserRepository;
 import com.lms.assessment.security.JwtService;
-import jakarta.annotation.PostConstruct;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -19,19 +19,14 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        seedUsers();
     }
 
-    @PostConstruct
-    void seedUsers() {
-        if (!userRepository.existsByEmail("admin@sliit.lk")) {
-            registerUser("superadmin", "Admin123", "admin@sliit.lk", User.Role.SUPERADMIN);
-        }
+    private void seedUsers() {
         if (!userRepository.existsByUsername("admin")) {
             registerUser("admin", "admin123", "admin@campus.com", User.Role.ADMIN);
         }
@@ -40,12 +35,6 @@ public class UserService {
         }
         if (!userRepository.existsByUsername("user")) {
             registerUser("user", "user123", "resident@campus.com", User.Role.USER);
-        }
-        if (!userRepository.existsByUsername("instructor")) {
-            registerUser("instructor", "instructor123", "instructor@sliit.lk", User.Role.INSTRUCTOR);
-        }
-        if (!userRepository.existsByUsername("student")) {
-            registerUser("student", "student123", "student@sliit.lk", User.Role.STUDENT);
         }
     }
 
@@ -59,22 +48,45 @@ public class UserService {
     }
 
     public Optional<AuthResponse> login(LoginRequest request) {
-        String identifier = request.getUsername();
-        if (identifier == null || identifier.isBlank()) {
-            return Optional.empty();
-        }
-        Optional<User> user = identifier.contains("@")
-                ? userRepository.findByEmail(identifier)
-                : userRepository.findByUsername(identifier);
+        return userRepository.findByUsername(request.getUsername())
+                .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()))
+                .map(user -> AuthResponse.builder()
+                        .id(user.getId())
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .role(user.getRole())
+                        .token(jwtService.generateToken(user))
+                        .build());
+    }
 
-        return user
-                .filter(u -> passwordEncoder.matches(request.getPassword(), u.getPassword()))
-                .map(u -> AuthResponse.builder()
-                        .id(u.getId())
-                        .username(u.getUsername())
-                        .email(u.getEmail())
-                        .role(u.getRole())
-                        .token(jwtService.generateToken(u))
+    public User findOrCreateFromGoogle(String email, String displayLabel) {
+        Optional<User> existing = userRepository.findByEmail(email.trim().toLowerCase());
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        String localPart = email.split("@")[0].replaceAll("[^a-zA-Z0-9]", "");
+        String username = localPart.isEmpty() ? "user" : localPart;
+        String candidate = username;
+        int i = 0;
+        while (userRepository.existsByUsername(candidate)) {
+            candidate = username + (++i);
+        }
+        User user = new User();
+        user.setUsername(candidate);
+        user.setEmail(email.trim().toLowerCase());
+        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+        user.setRole(User.Role.USER);
+        return userRepository.save(user);
+    }
+
+    public Optional<AuthResponse> profileForUserId(String userId) {
+        return userRepository.findById(userId)
+                .map(user -> AuthResponse.builder()
+                        .id(user.getId())
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .role(user.getRole())
+                        .token(null)
                         .build());
     }
 
@@ -82,10 +94,18 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    public boolean existsByEmail(String email) {
+        return userRepository.findByEmail(email).isPresent();
+    }
+
     public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
-
+    
     public User updateUserRole(String id, User.Role role) {
         User user = userRepository.findById(id).orElseThrow();
         user.setRole(role);

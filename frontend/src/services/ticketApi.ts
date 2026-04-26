@@ -59,6 +59,19 @@ export async function createTicket(formData: FormData): Promise<Ticket> {
   return res.data;
 }
 
+export async function updateTicket(ticketId: string, formData: FormData, currentUserId: string): Promise<Ticket> {
+  const res = await apiClient.put<Ticket>(`/tickets/${ticketId}`, formData, {
+    params: { currentUserId }
+  });
+  return res.data;
+}
+
+export async function deleteTicket(ticketId: string, currentUserId: string): Promise<void> {
+  await apiClient.delete(`/tickets/${ticketId}`, {
+    params: { currentUserId }
+  });
+}
+
 export async function addTicketComment(ticketId: string, content: string, currentUserId: string, role: TicketRole) {
   const senderName = role === 'ADMIN' ? 'System Administrator' : 
                     role === 'TECHNICIAN' ? 'Campus Technician' : 'Student';

@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, CalendarCheck, MapPin, Clock, Users } from 'lucide-react';
-import { bookingApi, type SlotSuggestion } from '../services/bookingApi';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Bot, User, Loader2, CalendarCheck, MapPin, Clock, Users, CheckCircle } from 'lucide-react';
+import { bookingApi, type ChatResponse, type SlotSuggestion } from '../services/bookingApi';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Message {

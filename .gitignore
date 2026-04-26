@@ -32,22 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 node_modules/
-
-### Runtime / build output ###
-*.log
-backend-startup*.log
-backend-run.log
-backend.log
-build-output.txt
-mvn-run-out.txt
-mvnw-err.txt
-mvnw-out.txt
-javac-ver.txt
-out.txt
-
-### Uploaded user content (not source) ###
-uploads/
-
-### Local secrets ###
-.env
-!.env.example
+src/main/resources/application-local.properties

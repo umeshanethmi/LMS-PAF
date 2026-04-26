@@ -1,11 +1,12 @@
 import React from 'react';
 import type { Ticket, TicketRole } from '../../services/ticketApi';
-import { Clock, CircleCheck, TriangleAlert, X as XIcon, User as UserIcon, MapPin, Hash } from 'lucide-react';
+import { Clock, CircleCheck, TriangleAlert, X as XIcon, User as UserIcon, MapPin, Hash, Trash2 } from 'lucide-react';
 
 interface TicketListProps {
   tickets: Ticket[];
   onSelectTicket: (ticket: Ticket) => void;
   onAssignTechnician?: (ticket: Ticket) => void;
+  onDeleteTicket?: (ticketId: string) => void;
   role: TicketRole;
 }
 
@@ -62,7 +63,7 @@ function getStatusStyles(status: Ticket['status']) {
   }
 }
 
-function TicketList({ tickets, onSelectTicket, onAssignTechnician, role }: TicketListProps) {
+function TicketList({ tickets, onSelectTicket, onAssignTechnician, onDeleteTicket, role }: TicketListProps) {
   const isAdmin = role === 'ADMIN';
 
   if (tickets.length === 0) {
@@ -90,7 +91,7 @@ function TicketList({ tickets, onSelectTicket, onAssignTechnician, role }: Ticke
               <th className="px-8 py-5">Priority</th>
               <th className="px-8 py-5">Technician</th>
               <th className="px-8 py-5">Reported</th>
-              {isAdmin && <th className="px-8 py-5 text-right">Actions</th>}
+              {(isAdmin || role === 'USER') && <th className="px-8 py-5 text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
@@ -141,18 +142,41 @@ function TicketList({ tickets, onSelectTicket, onAssignTechnician, role }: Ticke
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </td>
-                  {isAdmin && (
+                  {(isAdmin || role === 'USER') && (
                     <td className="px-8 py-6 text-right" onClick={(e) => e.stopPropagation()}>
-                      {t.status === 'OPEN' ? (
-                        <button
-                          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-600/20 hover:bg-slate-900 transition-all hover:scale-105 active:scale-95"
-                          onClick={() => onAssignTechnician?.(t)}
-                        >
-                          <UserIcon className="w-3 h-3" />
-                          Assign
-                        </button>
+                      {isAdmin ? (
+                        t.status === 'OPEN' ? (
+                          <button
+                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-600/20 hover:bg-slate-900 transition-all hover:scale-105 active:scale-95"
+                            onClick={() => onAssignTechnician?.(t)}
+                          >
+                            <UserIcon className="w-3 h-3" />
+                            Assign
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">In Workflow</span>
+                        )
                       ) : (
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">In Workflow</span>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-700 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
+                            onClick={() => onSelectTicket(t)}
+                          >
+                            View / Edit
+                          </button>
+                          {onDeleteTicket && (
+                            <button
+                              className="inline-flex items-center justify-center rounded-xl bg-white border border-rose-200 p-2 text-rose-500 shadow-sm hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteTicket(t.id);
+                              }}
+                              title="Delete Ticket"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       )}
                     </td>
                   )}
