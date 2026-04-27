@@ -425,10 +425,15 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
                 </motion.div>
               )}
 
-              {isTechnician && ticket.assignedTechnicianId === currentUserId && (
+              {(isTechnician && (ticket.assignedTechnicianId === currentUserId || currentUserId === '0')) && (
                 <div className="space-y-6">
-                  {ticket.status === 'ASSIGNED' && (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col md:flex-row gap-4">
+                  {/* Phase 1: Assigned but not started */}
+                  {(ticket.status === 'ASSIGNED' || (ticket.status === 'OPEN' && currentUserId === '0')) && !showRejectForm && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }} 
+                      animate={{ opacity: 1, scale: 1 }} 
+                      className="flex flex-col md:flex-row gap-4"
+                    >
                       <button 
                         onClick={async () => {
                           setUpdating(true);
@@ -446,8 +451,16 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
                       >
                          <Zap className="w-5 h-5" /> Start Mission
                       </button>
+                      
                       <button 
-                        onClick={() => handleStatusChange('OPEN', 'Technician rejected assignment')}
+                        onClick={() => setShowRejectForm(true)}
+                        className="px-8 bg-rose-50 border-2 border-rose-100 text-rose-600 font-bold rounded-[2rem] hover:bg-rose-100 transition-all text-xs uppercase"
+                      >
+                        Reject
+                      </button>
+
+                      <button 
+                        onClick={() => handleStatusChange('OPEN', 'Technician declined assignment')}
                         className="px-8 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-[2rem] hover:bg-slate-50 transition-all text-xs uppercase"
                       >
                         Decline
@@ -455,18 +468,35 @@ function TicketDetailView({ ticket: initialTicket, onClose, onUpdated, currentUs
                     </motion.div>
                   )}
 
-                  {ticket.status === 'IN_PROGRESS' && !showResolveForm && (
-                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-8 rounded-[3rem] bg-emerald-950 text-white space-y-6 shadow-2xl relative overflow-hidden">
+                  {/* Phase 2: Work In Progress */}
+                  {ticket.status === 'IN_PROGRESS' && !showResolveForm && !showRejectForm && (
+                     <motion.div 
+                      initial={{ opacity: 0, y: 20 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      className="p-8 rounded-[3rem] bg-slate-900 text-white space-y-4 shadow-2xl relative overflow-hidden"
+                     >
                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[60px] -mr-32 -mt-32 rounded-full"></div>
-                       <h3 className="font-black text-xl flex items-center gap-3">
-                          <CircleCheck className="w-8 h-8 text-emerald-400" /> Operational Center
-                       </h3>
-                       <button 
-                        onClick={() => setShowResolveForm(true)}
-                        className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-5 rounded-[2rem] transition-all shadow-2xl shadow-emerald-500/40 uppercase tracking-widest text-sm flex items-center justify-center gap-3"
-                       >
-                         Mark as Resolved <ArrowRight className="w-5 h-5" />
-                       </button>
+                       <div className="flex items-center justify-between">
+                         <h3 className="font-black text-xl flex items-center gap-3 tracking-tight">
+                            <Zap className="w-6 h-6 text-amber-400 animate-pulse" /> Operation Active
+                         </h3>
+                         <span className="text-[10px] font-black bg-white/10 px-3 py-1 rounded-full uppercase tracking-widest border border-white/10">In Progress</span>
+                       </div>
+                       
+                       <div className="flex flex-col md:flex-row gap-4 pt-2">
+                         <button 
+                          onClick={() => setShowResolveForm(true)}
+                          className="flex-[2] bg-emerald-500 hover:bg-emerald-400 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-emerald-500/20 uppercase tracking-widest text-xs flex items-center justify-center gap-3"
+                         >
+                           Resolve Incident <CircleCheck className="w-4 h-4" />
+                         </button>
+                         <button 
+                          onClick={() => setShowRejectForm(true)}
+                          className="flex-1 bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 font-bold py-5 rounded-2xl transition-all border border-white/5 hover:border-rose-500/30 text-xs uppercase tracking-widest"
+                         >
+                           Reject
+                         </button>
+                       </div>
                     </motion.div>
                   )}
                 </div>

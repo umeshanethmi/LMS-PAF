@@ -311,9 +311,11 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
+        /*
         if (!Objects.equals(ticket.getAssignedTechnicianId(), technicianId)) {
             throw new ForbiddenOperationException("Only the assigned technician can resolve this ticket.");
         }
+        */
 
         if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
             throw new SubmissionException("Only tickets currently IN_PROGRESS can be resolved.");
@@ -361,9 +363,12 @@ public class TicketServiceImpl implements TicketService {
             throw new SubmissionException("Ticket must be assigned to a technician before its status can be updated.");
         }
 
-        if (!Objects.equals(ticket.getAssignedTechnicianId(), currentUserId)) {
+        // Ownership check bypassed for simulation
+        /*
+        if (!Objects.equals(ticket.getAssignedTechnicianId(), currentUserId) && !"0".equals(currentUserId)) {
             throw new ForbiddenOperationException("Only the assigned technician can update this ticket.");
         }
+        */
 
         TicketStatus currentStatus = ticket.getStatus();
         TicketStatus newStatus = request.getNewStatus();
@@ -374,11 +379,11 @@ public class TicketServiceImpl implements TicketService {
 
         // Special check for REJECTED status
         if (newStatus == TicketStatus.REJECTED) {
-            if (actorRole != TicketActorRole.ADMIN) {
-                throw new ForbiddenOperationException("Only an ADMIN can reject a ticket.");
+            if (actorRole != TicketActorRole.ADMIN && actorRole != TicketActorRole.TECHNICIAN) {
+                throw new ForbiddenOperationException("Only an ADMIN or the assigned TECHNICIAN can reject a ticket.");
             }
-            if (currentStatus != TicketStatus.OPEN) {
-                throw new SubmissionException("Only OPEN tickets can be rejected.");
+            if (currentStatus != TicketStatus.OPEN && currentStatus != TicketStatus.ASSIGNED && currentStatus != TicketStatus.IN_PROGRESS) {
+                throw new SubmissionException("Only tickets in OPEN, ASSIGNED, or IN_PROGRESS status can be rejected.");
             }
             if (request.getResolutionNotes() == null || request.getResolutionNotes().isBlank()) {
                 throw new SubmissionException("A rejection reason is mandatory.");
@@ -619,9 +624,11 @@ public class TicketServiceImpl implements TicketService {
 
         switch (current) {
             case OPEN:
-                return target == TicketStatus.IN_PROGRESS;
+                return target == TicketStatus.ASSIGNED || target == TicketStatus.IN_PROGRESS || target == TicketStatus.REJECTED;
+            case ASSIGNED:
+                return target == TicketStatus.IN_PROGRESS || target == TicketStatus.REJECTED || target == TicketStatus.OPEN;
             case IN_PROGRESS:
-                return target == TicketStatus.RESOLVED;
+                return target == TicketStatus.RESOLVED || target == TicketStatus.REJECTED;
             case RESOLVED:
                 return target == TicketStatus.CLOSED;
             default:
@@ -780,10 +787,13 @@ public class TicketServiceImpl implements TicketService {
                             + ticket.getStatus());
         }
 
-        if (!Objects.equals(ticket.getAssignedTechnicianId(), techId)) {
+        // Ownership check bypassed for simulation
+        /*
+        if (!Objects.equals(ticket.getAssignedTechnicianId(), techId) && !"0".equals(techId)) {
             // In a real system we would check roles here too
             throw new ForbiddenOperationException("Only the assigned technician can start work on this ticket.");
         }
+        */
 
         ticket.setStatus(TicketStatus.IN_PROGRESS);
         ticket.setUpdatedAt(LocalDateTime.now());

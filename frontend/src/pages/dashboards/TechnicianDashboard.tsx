@@ -1,20 +1,28 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { getAllTickets } from '../../services/ticketApi';
+import { getAllTickets, getTicketById } from '../../services/ticketApi';
 import type { Ticket } from '../../services/ticketApi';
 import { useAuth } from '../../contexts/AuthContext';
-import { Wrench, CheckCircle2, Clock, Activity, BarChart3, AlertTriangle, ArrowUpRight, RefreshCw, Calendar, MapPin } from 'lucide-react';
+import { Wrench, CheckCircle2, Clock, Activity, BarChart3, AlertTriangle, ArrowUpRight, RefreshCw, Calendar, MapPin, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import TicketDetailView from '../../components/tickets/TicketDetailView';
 
 const TechnicianDashboard = () => {
   const { user, role } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
   const loadTickets = async () => {
     try {
       setLoading(true);
       const data = await getAllTickets(user?.id || '0', 'TECHNICIAN');
       setTickets(Array.isArray(data) ? data : []);
+      
+      // Refresh selected ticket if open
+      if (selectedTicket) {
+        const updated = await getTicketById(selectedTicket.id);
+        setSelectedTicket(updated);
+      }
     } catch (err) {
       console.error('Failed to load tickets', err);
     } finally {
@@ -170,13 +178,12 @@ const TechnicianDashboard = () => {
                     </div>
                   </div>
                 </div>
-                <Link
-                  to="/tickets"
-                  state={{ selectedId: ticket.id }}
+                <button
+                  onClick={() => setSelectedTicket(ticket)}
                   className="flex items-center gap-2 px-6 py-3 bg-slate-950 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95"
                 >
                   Manage <ArrowUpRight size={14} />
-                </Link>
+                </button>
               </div>
             ))
           )}
@@ -200,6 +207,17 @@ const TechnicianDashboard = () => {
           <p className="font-bold">Advanced performance analytics will be deployed in the next update.</p>
         </div>
       </div>
+
+      {/* Ticket Detail View Modal */}
+      {selectedTicket && (
+        <TicketDetailView
+          ticket={selectedTicket}
+          onClose={() => setSelectedTicket(null)}
+          onUpdated={loadTickets}
+          currentUserId={user?.id || '0'}
+          role={role || 'TECHNICIAN'}
+        />
+      )}
     </div>
   );
 };
