@@ -23,7 +23,7 @@ public class CampusResourceService {
     }
 
     public List<CampusResourceResponse> findAll() {
-        return repo.findByActiveTrue().stream()
+        return repo.findAll().stream()
                 .map(CampusResourceResponse::from)
                 .collect(Collectors.toList());
     }

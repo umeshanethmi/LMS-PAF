@@ -59,6 +59,7 @@ export default function ManageResourcesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<ResourceType | 'ALL'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ACTIVE');
   const [query, setQuery] = useState('');
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -86,10 +87,12 @@ export default function ManageResourcesPage() {
   const filtered = useMemo(() => {
     return resources.filter(r => {
       if (filter !== 'ALL' && r.type !== filter) return false;
+      if (statusFilter === 'ACTIVE' && !r.active) return false;
+      if (statusFilter === 'INACTIVE' && r.active) return false;
       if (query && !`${r.code} ${r.name}`.toLowerCase().includes(query.toLowerCase())) return false;
       return true;
     });
-  }, [resources, filter, query]);
+  }, [resources, filter, statusFilter, query]);
 
   const openCreate = () => {
     setForm(EMPTY_FORM);
@@ -222,6 +225,21 @@ export default function ManageResourcesPage() {
               }`}
             >
               {t}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1">
+          {(['ACTIVE', 'INACTIVE', 'ALL'] as const).map(s => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                statusFilter === s
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {s}
             </button>
           ))}
         </div>
