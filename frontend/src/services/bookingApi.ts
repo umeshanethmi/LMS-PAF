@@ -41,6 +41,8 @@ export interface BookingRecord {
   updatedAt: string;
 }
 
+export type BookingStatus = BookingRecord['status'];
+
 export const bookingApi = {
   chat: (message: string, userId?: string, preferredDate?: string) =>
     apiClient.post<ChatResponse>('/booking-chat', { message, userId, preferredDate }),
@@ -51,8 +53,16 @@ export const bookingApi = {
   myBookings: () =>
     apiClient.get<BookingRecord[]>('/bookings?mine=true'),
 
+  /** Admin/Instructor: list every booking across all users. */
+  allBookings: () =>
+    apiClient.get<BookingRecord[]>('/bookings'),
+
   cancel: (id: string) =>
     apiClient.put<BookingRecord>(`/bookings/${id}/cancel`),
+
+  /** Admin: approve or reject a booking. */
+  updateStatus: (id: string, status: BookingStatus, reason?: string) =>
+    apiClient.put<BookingRecord>(`/bookings/${id}/status`, { status, reason }),
 
   getResources: () =>
     apiClient.get('/resources'),

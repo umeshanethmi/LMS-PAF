@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { getAllTickets } from '../../services/ticketApi';
 import type { Ticket } from '../../services/ticketApi';
+import { bookingApi, type BookingRecord } from '../../services/bookingApi';
 import TicketCreateForm from '../../components/tickets/TicketCreateForm';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Ticket as TicketIcon, CheckCircle2, Clock, Activity, ArrowUpRight } from 'lucide-react';
+import { Plus, Ticket as TicketIcon, CheckCircle2, Clock, Activity, ArrowUpRight, CalendarCheck, Bot, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const UserDashboard = () => {
   const { user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -24,8 +26,18 @@ const UserDashboard = () => {
     }
   };
 
+  const loadBookings = async () => {
+    try {
+      const { data } = await bookingApi.myBookings();
+      setBookings(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load bookings', err);
+    }
+  };
+
   useEffect(() => {
     loadTickets();
+    loadBookings();
   }, []);
 
   const stats = useMemo(() => ({
@@ -33,6 +45,25 @@ const UserDashboard = () => {
     resolved: tickets.filter(t => t.status === 'RESOLVED').length,
     pending: tickets.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length
   }), [tickets]);
+
+  const bookingStats = useMemo(() => {
+    const now = new Date();
+    const upcoming = bookings.filter(b =>
+      (b.status === 'PENDING' || b.status === 'APPROVED') && new Date(b.endTime) >= now
+    );
+    upcoming.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    return {
+      upcomingCount: upcoming.length,
+      pendingCount: bookings.filter(b => b.status === 'PENDING').length,
+      next: upcoming[0],
+    };
+  }, [bookings]);
+
+  const formatDateTime = (iso: string) =>
+    new Date(iso).toLocaleString(undefined, {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+    });
 
   return (
     <>
@@ -106,6 +137,73 @@ const UserDashboard = () => {
           </div>
         </div>
 
+        {/* Bookings Section */}
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden p-8">
+          <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className="bg-emerald-100 p-3 rounded-2xl">
+                <CalendarCheck className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-slate-800">Your Bookings</h2>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Halls, labs and equipment</p>
+              </div>
+            </div>
+            <Link
+              to="/book"
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black uppercase tracking-widest px-5 py-3 rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-95"
+            >
+              <Bot className="w-4 h-4" />
+              Book a Room
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-slate-50 rounded-2xl border border-slate-100 p-6">
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Upcoming</p>
+              <p className="text-4xl font-black text-slate-900 mt-2">{bookingStats.upcomingCount}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">Bookings still ahead.</p>
+            </div>
+            <div className="bg-amber-50/60 rounded-2xl border border-amber-100 p-6">
+              <p className="text-[11px] font-black uppercase tracking-widest text-amber-600">Awaiting Approval</p>
+              <p className="text-4xl font-black text-amber-700 mt-2">{bookingStats.pendingCount}</p>
+              <p className="text-xs font-medium text-amber-700/70 mt-1">Pending an admin's review.</p>
+            </div>
+            <Link
+              to="/my-bookings"
+              className="bg-indigo-50/70 rounded-2xl border border-indigo-100 p-6 group hover:border-indigo-300 hover:shadow-md transition-all flex flex-col justify-between"
+            >
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-widest text-indigo-600">Manage</p>
+                <p className="text-lg font-black text-indigo-900 mt-2 leading-tight">Open My Bookings</p>
+                <p className="text-xs font-medium text-indigo-700/70 mt-1">Cancel or review the full list.</p>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-indigo-400 self-end group-hover:text-indigo-600 group-hover:scale-110 transition-all" />
+            </Link>
+          </div>
+
+          {bookingStats.next && (
+            <div className="mt-6 rounded-2xl border border-slate-100 bg-gradient-to-r from-indigo-50/60 to-white p-5 flex items-center gap-5 flex-wrap">
+              <div className="bg-white rounded-xl border border-indigo-100 px-4 py-3 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Next up</p>
+                <p className="text-lg font-black text-slate-900">{bookingStats.next.resourceCode}</p>
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <p className="font-bold text-slate-800">{bookingStats.next.resourceName}</p>
+                <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                  <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{bookingStats.next.building}</span>
+                  <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{formatDateTime(bookingStats.next.startTime)}</span>
+                  <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md border ${
+                    bookingStats.next.status === 'APPROVED'
+                      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                      : 'bg-amber-100 text-amber-700 border-amber-200'
+                  }`}>{bookingStats.next.status}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Quick Links / Guide Mockup */}
         <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden p-8">
            <div className="flex items-center gap-4 mb-8">
@@ -117,7 +215,7 @@ const UserDashboard = () => {
                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Helpful Links</p>
               </div>
            </div>
-           
+
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Link to="/tickets" className="flex items-center justify-between p-6 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all group bg-slate-50">
                  <div>

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { getAllTickets } from '../../services/ticketApi';
 import type { Ticket } from '../../services/ticketApi';
 import { useAuth } from '../../contexts/AuthContext';
-import { Wrench, CheckCircle2, Clock, Activity, BarChart3, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { Wrench, CheckCircle2, Clock, Activity, BarChart3, AlertTriangle, ArrowUpRight, Bot, CalendarCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const TechnicianDashboard = () => {
@@ -110,6 +110,34 @@ const TechnicianDashboard = () => {
             <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
             <p className="font-bold">Chart visualization will be deployed in the next update.</p>
          </div>
+      </div>
+
+      {/* Booking quick links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Link to="/book" className="bg-white rounded-2xl border border-slate-100 p-6 hover:border-indigo-200 hover:shadow-md transition-all group flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-50 rounded-2xl group-hover:bg-indigo-100 transition-colors">
+              <Bot className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-800">Book a Room</h3>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">Reserve a hall, lab or equipment for site work.</p>
+            </div>
+          </div>
+          <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600" />
+        </Link>
+        <Link to="/my-bookings" className="bg-white rounded-2xl border border-slate-100 p-6 hover:border-indigo-200 hover:shadow-md transition-all group flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-50 rounded-2xl group-hover:bg-emerald-100 transition-colors">
+              <CalendarCheck className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-800">My Bookings</h3>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">See or cancel your active reservations.</p>
+            </div>
+          </div>
+          <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600" />
+        </Link>
       </div>
     </div>
   );
